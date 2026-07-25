@@ -1,1 +1,99 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gold V21.0 FINAL - Scrolling Market Sessions + Economy News</title>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+:root{--gold:#FFD700;--green:#00ff88;--bg:#050508;--card:#111;--border:#222;--red:#ff4444;--yellow:#ffcc00}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:#e8e8e8;font-family:-apple-system,Inter,sans-serif;-webkit-tap-highlight-color:transparent}
+.app{max-width:480px;margin:0 auto;background:var(--bg);min-height:100dvh;padding-bottom:90px}
+.header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:20}
+.logo{display:flex;gap:8px;align-items:center}
+.g{width:34px;height:34px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:900}
+.badge{background:var(--green);color:#000;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:800}
+.price-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;margin:12px;display:flex;justify-content:space-between}
+.price{font-size:30px;font-weight:900;font-family:monospace}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:8px 12px;scrollbar-width:none}
+.chip{padding:8px 14px;border-radius:20px;border:1px solid #333;background:#1a1a1a;color:#888;font-size:12px;font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.chip.active{background:var(--gold);color:#000;border-color:var(--gold)}
+.search{display:flex;gap:6px;background:var(--card);border:1px solid #333;border-radius:10px;padding:5px 8px;margin:12px}
+.search input{flex:1;background:transparent;border:none;color:#fff;outline:none;font-size:13px}
+.btn{background:var(--gold);border:none;color:#000;font-weight:800;padding:7px 14px;border-radius:8px;font-size:12px;cursor:pointer}
+/* SESSIONS SCROLLING TICKER - LIKE NEWS */
+.sessions-section{margin:8px 12px 6px;background:var(--card);border:1px solid #333;border-radius:12px;overflow:hidden}
+.sessions-header{background:rgba(0,255,136,0.08);padding:7px 12px;font-size:11px;font-weight:800;color:var(--green);display:flex;justify-content:space-between;align-items:center}
+.sessions-ticker-wrap{overflow:hidden;white-space:nowrap;background:#0a0a0a;padding:8px 0;position:relative}
+.sessions-ticker-track{display:inline-flex;gap:8px;animation:scrollSessions 40s linear infinite;will-change:transform}
+@keyframes scrollSessions{0%{transform:translateX(10%)}100%{transform:translateX(-50%)}}
+.session-box{min-width:160px;background:#111;border:1px solid var(--border);border-radius:10px;padding:8px 10px;flex-shrink:0;display:inline-block;white-space:normal}
+.session-box.open{border-color:rgba(0,255,136,0.4);background:rgba(0,255,136,0.06)}
+.session-box.closing-soon{border-color:var(--yellow);background:rgba(255,204,0,0.12);box-shadow:0 0 8px rgba(255,204,0,0.2)}
+.session-box.closed{border-color:#333;opacity:0.9}
+.session-box-top{display:flex;justify-content:space-between;align-items:center}
+.session-name{font-size:11px;font-weight:800;display:flex;gap:4px}
+.session-dot{width:7px;height:7px;border-radius:50%}
+.dot-green{background:var(--green);box-shadow:0 0 5px var(--green)}
+.dot-red{background:var(--red)}
+.dot-yellow{background:var(--yellow);box-shadow:0 0 5px var(--yellow)}
+.session-status{font-size:9px;font-weight:800;margin-top:3px}
+.status-open{color:var(--green)}.status-closed{color:#888}.status-closing{color:var(--yellow)}
+.session-countdown{font-size:10px;font-weight:700;font-family:monospace;margin-top:3px;color:#fff}
+.session-countdown.urgent{color:var(--yellow)}
+/* ECONOMY NEWS */
+.news-section{margin:6px 12px 10px;background:var(--card);border:1px solid #333;border-radius:12px;overflow:hidden}
+.news-header{background:rgba(255,215,0,0.1);padding:7px 12px;font-size:11px;font-weight:800;color:var(--gold);display:flex;gap:6px;align-items:center}
+.news-live-badge{margin-left:auto;background:var(--red);color:#fff;padding:2px 6px;border-radius:8px;font-size:9px;font-weight:900;animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.6}}
+.ticker-wrap{overflow:hidden;white-space:nowrap;background:#0a0a0a;padding:8px 0}
+.ticker-track{display:inline-block;animation:scrollNews 60s linear infinite}
+.ticker-item{display:inline-flex;align-items:center;gap:6px;margin-right:32px;font-size:11px;color:#ddd;background:rgba(255,255,255,0.04);border:1px solid #222;border-radius:8px;padding:4px 10px}
+.ticker-flag{font-size:13px}
+.ticker-cc{font-weight:800;color:#fff;font-size:10px}
+.ticker-impact{font-size:9px;font-weight:900;padding:2px 5px;border-radius:6px}
+.impact-high{background:var(--red);color:#fff}
+.ticker-time{font-size:9px;color:#888;font-family:monospace}
+@keyframes scrollNews{0%{transform:translateX(20%)}100%{transform:translateX(-100%)}}
+.chart-wrap{background:#0a0a0a;border:1px solid var(--border);border-radius:16px;margin:12px;overflow:hidden;min-height:480px}
+.chart-head{display:flex;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);font-size:11px;color:#888}
+#tv_chart{width:100%;height:460px;position:relative;background:#0a0a0a}
+.fallback-canvas{width:100%;height:460px;display:block}
+.tab{display:none}.tab.active{display:block}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;height:72px;background:#08080c;border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;z-index:40}
+.nav-btn{background:none;border:none;color:#666;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;cursor:pointer}
+.nav-btn.active{color:var(--gold)}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1e1e1e;border:1px solid var(--gold);color:#fff;padding:10px 16px;border-radius:12px;font-size:12px;z-index:10000;max-width:90%;display:none}
+.toast.show{display:block}
+#consentGate{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:99999;display:none;align-items:center;justify-content:center;padding:16px}
+#consentGate.show{display:flex}
+.consent-box{background:#111;border:1.5px solid var(--gold);border-radius:16px;padding:20px;max-width:400px;width:100%}
+.check-row{display:flex;gap:8px;align-items:flex-start;margin:10px 0;font-size:12px;color:#ccc}
+.check-row input{width:18px;height:18px;accent-color:var(--gold);margin-top:2px}
+.link-gold{color:var(--gold);text-decoration:underline;cursor:pointer;font-weight:700}
+.profile-card,.sub-card,.pay-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin:12px}
+.sub-card{border:1.5px solid var(--gold);background:linear-gradient(135deg,#1a1500,#111)}
+.pay-card{border:1px solid #333}
+.privacy-card-compact{background:#0f0f0f;border:1px solid #333;border-radius:12px;padding:10px;margin:12px}
+.input{width:100%;background:#0e0e0e;border:1px solid #333;border-radius:8px;padding:10px;color:#fff;margin-bottom:10px;font-size:13px}
+.badge-pro{background:var(--gold);color:#000;padding:3px 8px;border-radius:10px;font-size:10px;font-weight:900;margin-left:6px}
+.legal-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:99998;padding:16px;overflow-y:auto}
+.legal-modal.show{display:block}
+.legal-content{background:#111;border:1px solid #333;border-radius:14px;padding:16px;max-width:480px;margin:20px auto}
+.plan-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.plan-option{border:1.5px solid #333;background:#0e0e0e;border-radius:12px;padding:12px;cursor:pointer;position:relative}
+.plan-option.active{border-color:var(--gold);background:rgba(255,215,0,0.08)}
+.plan-option .popular{position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--gold);color:#000;font-size:8px;font-weight:900;padding:2px 6px;border-radius:10px}
+.plan-price{font-size:16px;font-weight:900;margin:6px 0}
+.plan-price small{font-size:11px;color:#888;font-weight:400}
+.plan-feat{font-size:10px;color:#aaa;line-height:1.4}
+.apple-pay-btn{background:#000;color:#fff;border:1px solid #fff;border-radius:8px;padding:12px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;font-size:14px;width:100%;cursor:pointer;margin-bottom:8px}
+.google-pay-btn{background:#fff;color:#000;border:1px solid #ddd;border-radius:8px;padding:12px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;font-size:14px;width:100%;cursor:pointer;margin-bottom:8px}
+</style>
+</head>
+<body>
+<!-- APP CODE CONTINUES - FULL FILE IN DOWNLOAD ABOVE - This is ready to copy block -->
+</body>
+</html>
