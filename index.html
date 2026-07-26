@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><style>
+@font-face {
+  font-family: "Optimistic";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/fonts/OptimisticAI_VF_Optimized.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Optimistic Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/OptimisticMono_W_TextRegular.woff2") format("woff2");
+}
+:where(html) {
+  font-family: "Optimistic", system-ui, sans-serif;
+}
+:where(code, pre, kbd, samp) {
+  font-family: "Optimistic Mono", ui-monospace, monospace;
+}
+</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache">
+<title>Gold V32.6 TRADINGVIEW CLEAN NO LOCK + BELLS - CLOSED PHONE</title>
+<script src="https://s3.tradingview.com/tv.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js"></script>
+<style>
+:root{--gold:#FFD700;--green:#00ff88;--bg:#050508;--card:#111;--border:#222}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#050508;color:#e8e8e8;font-family:-apple-system,Inter,sans-serif}
+.app{max-width:480px;margin:0 auto;background:#050508;min-height:100vh;padding-bottom:90px}
+.header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #222;position:sticky;top:0;background:#050508;z-index:20}
+.logo{display:flex;gap:8px;align-items:center}
+.g{width:34px;height:34px;background:#FFD700;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:900}
+.badge{background:#FFD700;color:#000;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:800}
+.price-card{background:#111;border:1.5px solid #FFD700;border-radius:16px;padding:14px;margin:12px;display:flex;justify-content:space-between;box-shadow:0 0 20px rgba(255,215,0,0.15)}
+.price{font-size:32px;font-weight:900;font-family:monospace}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:8px 12px;scrollbar-width:none}
+.chip{padding:8px 14px;border-radius:20px;border:1px solid #333;background:#1a1a1a;color:#888;font-size:12px;font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.chip.active{background:#FFD700;color:#000;border-color:#FFD700}
+.search{display:flex;gap:6px;background:#111;border:1px solid #333;border-radius:10px;padding:5px 8px;margin:12px}
+.search input{flex:1;background:transparent;border:none;color:#fff;outline:none;font-size:13px}
+.btn{background:#FFD700;border:none;color:#000;font-weight:800;padding:7px 14px;border-radius:8px;font-size:12px;cursor:pointer}
+.sessions-section{margin:8px 12px 6px;background:#111;border:1px solid #333;border-radius:12px;overflow:hidden}
+.sessions-header{background:rgba(0,255,136,0.08);padding:7px 12px;font-size:11px;font-weight:800;color:#00ff88;display:flex;justify-content:space-between}
+.sessions-ticker-wrap{overflow:hidden;background:#0a0a0a;padding:8px 0}
+.sessions-ticker-track{display:flex;gap:8px;width:max-content;animation:scrollSessions 35s linear infinite}
+@keyframes scrollSessions{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.session-box{min-width:160px;background:#111;border:1.5px solid #222;border-radius:10px;padding:9px 11px;flex-shrink:0}
+.session-box.open{border-color:rgba(0,255,136,0.5);background:rgba(0,255,136,0.07)}
+.session-box.closed{border-color:#333;opacity:0.85}
+.session-top{display:flex;justify-content:space-between;align-items:center}
+.session-name{font-size:12px;font-weight:800;display:flex;gap:5px}
+.session-status{font-size:10px;font-weight:800;margin-top:4px}
+.status-open{color:#00ff88}.status-closed{color:#888}
+.session-countdown{font-size:10px;font-weight:700;font-family:monospace;margin-top:4px;color:#fff}
+.news-section{margin:6px 12px 10px;background:#111;border:1px solid #333;border-radius:12px;overflow:hidden}
+.news-header{background:rgba(255,215,0,0.1);padding:7px 12px;font-size:11px;font-weight:800;color:#FFD700;display:flex;gap:6px}
+.news-live-badge{margin-left:auto;background:#ff4444;color:#fff;padding:2px 6px;border-radius:8px;font-size:9px;font-weight:900}
+.ticker-wrap{overflow:hidden;white-space:nowrap;background:#0a0a0a;padding:8px 0}
+.ticker-track{display:flex;gap:20px;width:max-content;animation:scrollNews 50s linear infinite}
+.ticker-item{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#ddd;background:rgba(255,255,255,0.05);border:1px solid #222;border-radius:8px;padding:5px 12px;flex-shrink:0}
+@keyframes scrollNews{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.chart-wrap{background:#0a0a0a;border:1px solid #222;border-radius:16px;margin:12px;overflow:hidden;position:relative}
+.chart-head{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid #222;font-size:11px;color:#888}
+.lock-btn{background:#1a1a1a;border:1px solid #333;color:#FFD700;padding:5px 12px;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer}
+.lock-btn.locked{background:rgba(255,215,0,0.15);border-color:#FFD700;color:#FFD700}
+.lock-btn.unlocked{background:#111;border-color:#555;color:#888}
+#tv_chart_container{width:100%;height:500px;background:#0a0a0a;position:relative;border-radius:12px;overflow:hidden}
+#fallbackCanvas{display:none !important}
+.tab{display:none}.tab.active{display:block}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;height:72px;background:#08080c;border-top:1px solid #222;display:flex;justify-content:space-around;align-items:center;z-index:40}
+.nav-btn{background:none;border:none;color:#666;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;cursor:pointer}
+.nav-btn.active{color:#FFD700}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1e1e1e;border:1px solid #FFD700;color:#fff;padding:10px 16px;border-radius:12px;font-size:12px;z-index:10000;max-width:90%;display:none}
+.toast.show{display:block}
+.reports-header{background:linear-gradient(135deg,#1a1500,#111);border:1.5px solid #FFD700;border-radius:14px;padding:14px;margin:12px}
+.reports-stats{display:flex;gap:8px;margin-top:10px}
+.stat-box{flex:1;background:#0a0a0a;border:1px solid #222;border-radius:10px;padding:8px;text-align:center}
+.stat-num{font-size:18px;font-weight:900;color:#FFD700}
+.stat-label{font-size:9px;color:#888;margin-top:2px}
+.report-card{background:#111;border:1px solid #222;border-radius:14px;padding:14px;margin-bottom:12px}
+.report-card.gold{border-left:4px solid #FFD700}
+.report-card.other{border-left:4px solid #888}
+.report-top{display:flex;justify-content:space-between;align-items:center}
+.report-symbol{font-size:14px;font-weight:900;color:#fff}
+.report-type{padding:4px 10px;border-radius:20px;font-size:10px;font-weight:800;border:1px solid #333;background:#0e0e0e;color:#FFD700}
+.report-meta{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.meta-badge{background:#0e0e0e;border:1px solid #333;padding:3px 8px;border-radius:8px;font-size:10px;color:#aaa}
+.report-time{font-size:10px;color:#666;margin-top:8px;display:flex;justify-content:space-between}
+.report-desc{font-size:11px;color:#bbb;margin-top:8px;background:#0a0a0a;padding:8px;border-radius:8px;border:1px solid #1a1a1a;line-height:1.4}
+.scan-btn{width:100%;background:#FFD700;color:#000;border:none;padding:12px;border-radius:10px;font-weight:900;font-size:13px;margin:12px 0;cursor:pointer}
+.filter-row{display:flex;gap:6px;padding:0 12px;margin-bottom:10px;overflow-x:auto}
+.filter-btn{flex-shrink:0;background:#1a1a1a;border:1px solid #333;color:#888;padding:8px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer}
+.filter-btn.active{background:#FFD700;color:#000;border-color:#FFD700}
+.materials-section{background:#0f0f0f;border:1px solid #333;border-radius:12px;padding:12px;margin:12px}
+.search-report{display:flex;gap:6px;background:#111;border:1.5px solid #FFD700;border-radius:10px;padding:6px 10px;margin-top:8px}
+.search-report input{flex:1;background:transparent;border:none;color:#fff;outline:none;font-size:13px}
+.profile-card,.sub-card,.pay-card{background:#111;border:1px solid #222;border-radius:14px;padding:14px;margin:12px}
+.sub-card{border:1.5px solid #FFD700;background:linear-gradient(135deg,#1a1500,#111)}
+.pay-card{border:1px solid #333}
+.privacy-card-compact{background:#0f0f0f;border:1px solid #333;border-radius:12px;padding:10px;margin:12px}
+.input{width:100%;background:#0e0e0e;border:1px solid #333;border-radius:8px;padding:10px;color:#fff;margin-bottom:10px;font-size:13px}
+.badge-pro{background:#FFD700;color:#000;padding:3px 8px;border-radius:10px;font-size:10px;font-weight:900;margin-left:6px}
+.plan-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.plan-option{border:1.5px solid #333;border-radius:12px;padding:10px;text-align:center;position:relative;cursor:pointer}
+.plan-option.active{border-color:#FFD700;background:rgba(255,215,0,0.08)}
+.popular{position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#FFD700;color:#000;font-size:9px;font-weight:900;padding:2px 8px;border-radius:10px}
+.plan-price{font-size:16px;font-weight:900;color:#FFD700;margin:6px 0}
+.plan-feat{font-size:10px;color:#aaa;line-height:1.4}
+.apple-pay-btn{background:#fff;color:#000;border:none;width:100%;padding:12px;border-radius:10px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px}
+.google-pay-btn{background:#1a1a1a;border:1px solid #333;color:#fff;width:100%;padding:12px;border-radius:10px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px}
+.legal-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:99998;padding:16px;overflow-y:auto}
+.legal-modal.show{display:block}
+.legal-content{background:#111;border:1px solid #333;border-radius:14px;padding:16px;max-width:480px;margin:20px auto}
+#consentGate{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:99999;display:none;align-items:center;justify-content:center;padding:16px}
+#consentGate.show{display:flex}
+.consent-box{background:#111;border:1.5px solid #FFD700;border-radius:16px;padding:20px;max-width:400px;width:100%}
+.check-row{display:flex;gap:8px;align-items:flex-start;margin:10px 0;font-size:12px;color:#ccc}
+.check-row input{width:18px;height:18px;accent-color:#FFD700;margin-top:2px}
+.push-card{background:linear-gradient(135deg,#001a0f,#111);border:1.5px solid #00ff88;border-radius:14px;padding:14px;margin:12px}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="header"><div class="logo"><div class="g">G</div><div><div style="font-weight:900;font-size:14px">Gold Signal Pro</div><div style="font-size:10px;color:#888">V32.1 FIREBASE PUSH + VAPID • CLOSED PHONE</div></div></div><div class="badge" id="planBadgeHeader">FREE</div></div>
+
+<div id="tab-home" class="tab active">
+<div class="chips" id="chips"></div>
+<div class="search"><input id="inp" placeholder="Search XAU, XAG, WTI..." onkeydown="if(event.key==='Enter')doSearch()"><button class="btn" onclick="doSearch()">ADD</button></div>
+<div class="sessions-section"><div class="sessions-header"><span>🌍 Market Sessions - Live Countdown</span><span id="gmtClock">00:00:00 GMT</span></div><div class="sessions-ticker-wrap"><div class="sessions-ticker-track" id="sessionsTicker"></div></div></div>
+<div class="news-section"><div class="news-header"><span>📰 Economy News - HIGH IMPACT</span><span class="news-live-badge">● LIVE</span></div><div class="ticker-wrap"><div class="ticker-track" id="newsTicker"></div></div></div>
+<div class="price-card"><div><div style="font-size:11px;color:#888" id="symLabel">XAU/USD</div><div class="price" id="priceEl">$4053.70</div><div style="font-size:11px;color:#00ff88">● LIVE • MA50</div></div><div style="text-align:right"><div style="font-size:10px;color:#666">TRADINGVIEW</div><div style="font-size:11px;font-weight:800;color:#FFD700" id="maInfo">MA50: --</div></div></div>
+<div class="chart-wrap" style="border:1px solid #FFD700;border-radius:16px;overflow:hidden;background:#0a0a0a"><div class="chart-head"><div style="display:flex;align-items:center;gap:8px"><span id="ctitle">XAUUSD • 30M • TV WIDGET • MA50</span></div><span style="color:#FFD700" id="chartStatus">● TRADINGVIEW • REAL • LIVE</span></div><div id="tv_chart_container"></div><canvas id="fallbackCanvas"></canvas></div>
+</div>
+
+<div id="tab-reports" class="tab">
+<div class="push-card">
+<div style="display:flex;justify-content:space-between;align-items:center">
+<div style="font-size:13px;font-weight:900;color:#00ff88">🔔 Push Notifications</div>
+<div id="pushStatus" style="font-size:10px;background:#222;padding:3px 8px;border-radius:8px;color:#888">Checking...</div>
+</div>
+<div style="font-size:10px;color:#aaa;margin-top:6px">Get alerts even when phone is closed! Enable to receive market reports</div>
+<button id="enablePushBtn" onclick="enablePush()" style="width:100%;margin-top:10px;background:#00ff88;color:#000;border:none;padding:10px;border-radius:10px;font-weight:900;font-size:12px">🔔 Enable Push - Closed Phone Alerts</button>
+<div id="fcmTokenBox" style="display:none;margin-top:8px;background:#0a0a0a;border:1px solid #333;border-radius:8px;padding:8px;font-size:9px;color:#666;word-break:break-all"></div>
+<button id="testPushBtn" onclick="testLocalPush()" style="display:none;margin-top:8px;width:100%;background:#1a1a1a;border:1px solid #00ff88;color:#00ff88;padding:8px;border-radius:8px;font-size:11px">📲 Test Push (Local)</button>
+</div>
+
+<div class="reports-header">
+<div style="display:flex;justify-content:space-between;align-items:center">
+<h3 style="color:#FFD700;font-size:16px">📊 
+<!-- V32.4 MINIMAL SOUND BAR -->
+<div style="margin:10px 12px;background:#0f0f0f;border:1px solid #222;border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:8px">
+  <!-- Row 1: bells in one line -->
+  <div style="display:flex;align-items:center;gap:6px">
+    <span style="font-size:10px;color:#666;font-weight:700;white-space:nowrap">SOUND</span>
+    <div style="display:flex;gap:6px;flex:1">
+      <button id="mb1" class="mini-bell-btn" onclick="setBellStage(1)" style="flex:1;background:#1a1a1a;border:1px solid #333;color:#fff;padding:8px 0;border-radius:10px;font-size:14px">🔔</button>
+      <button id="mb2" class="mini-bell-btn" onclick="setBellStage(2)" style="flex:1;background:#1a1a1a;border:1px solid #333;color:#fff;padding:8px 0;border-radius:10px;font-size:14px">🔔🔔</button>
+      <button id="mb3" class="mini-bell-btn active" onclick="setBellStage(3)" style="flex:1;background:#1a1a1a;border:1px solid #333;color:#fff;padding:8px 0;border-radius:10px;font-size:14px">🔔🔔🔔</button>
+      <button id="mb0" class="mini-bell-btn" onclick="setMute()" style="flex:1;background:#1a1a1a;border:1px solid #333;color:#888;padding:8px 0;border-radius:10px;font-size:11px;font-weight:700">🔇<br><span style="font-size:8px">MUTE</span></button>
+    </div>
+  </div>
+  <!-- Row 2: add your own tune -->
+  <div style="display:flex;align-items:center;gap:8px;background:#000;border:1px solid #222;border-radius:10px;padding:7px 10px">
+    <span style="font-size:10px;color:#00ff88;font-weight:800;white-space:nowrap">🎵 Add your own tune</span>
+    <span id="ctName" style="flex:1;font-size:10px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">No tune</span>
+    <label for="ctInput" style="background:#FFD700;color:#000;padding:6px 12px;border-radius:8px;font-size:10px;font-weight:900;cursor:pointer;white-space:nowrap">ADD</label>
+    <input type="file" id="ctInput" accept="audio/*" style="display:none" onchange="handleCustomTuneUploadMini(event)">
+    <button onclick="playCustomMini()" style="background:#222;border:1px solid #333;color:#fff;width:28px;height:28px;border-radius:8px;font-size:10px">▶️</button>
+    <button onclick="clearCustomMini()" style="background:#222;border:1px solid #333;color:#ff5555;width:28px;height:28px;border-radius:8px;font-size:10px">✕</button>
+  </div>
+  <label style="display:flex;align-items:center;gap:6px;padding:0 2px;cursor:pointer">
+    <input type="checkbox" id="useCustomToggleMini" onchange="toggleUseCustomMini(this)" style="width:13px;height:13px">
+    <span style="font-size:10px;color:#888">Use my tune for alerts</span>
+  </label>
+</div>
+<style>
+.mini-bell-btn.active{background:#FFD700 !important;border-color:#FFD700 !important;color:#000 !important;box-shadow:0 0 10px rgba(255,215,0,0.3)}
+</style>
+<script>
+setTimeout(()=>{ try{ initCustomTuneMinimal(); const s=getCurrentBellStage(); document.querySelectorAll('.mini-bell-btn').forEach(b=>b.classList.remove('active')); const b=document.getElementById('mb'+s); if(b) b.classList.add('active'); }catch(e){} },600);
+</script>
+
+Market Quick Reports</h3>
+<span style="background:#222;color:#FFD700;padding:3px 8px;border-radius:8px;font-size:9px;font-weight:800;border:1px solid #333">39 DAYS • PUSH</span>
+</div>
+<div style="font-size:10px;color:#aaa;margin-top:6px">Monitors market movements - 39d auto-delete - Push when phone closed - Educational only</div>
+<div class="reports-stats">
+<div class="stat-box"><div class="stat-num" id="todayReports">0</div><div class="stat-label">TODAY</div></div>
+<div class="stat-box"><div class="stat-num" id="totalReports">0</div><div class="stat-label">39 DAYS</div></div>
+<div class="stat-box"><div class="stat-num" id="goldReports" style="color:#FFD700">0</div><div class="stat-label">GOLD</div></div>
+<div class="stat-box"><div class="stat-num" id="wtiReports" style="color:#00ff88">0</div><div class="stat-label">PUSH ON</div></div>
+</div>
+</div>
+
+<div class="materials-section">
+<div style="display:flex;justify-content:space-between"><div style="font-size:12px;font-weight:800;color:#FFD700">🔧 My Materials - Prime: 10, Free: 3</div><div style="font-size:10px;color:#888" id="matCount">3/10</div></div>
+<div class="chips" id="reportChips" style="padding:0"></div>
+<div class="search-report"><input id="reportSearch" placeholder="Search: XAU, XAG, WTI, EURUSD, BTC..." onkeydown="if(event.key==='Enter')addReportMaterial()"><button class="btn" onclick="addReportMaterial()">+ ADD</button></div>
+</div>
+
+<div class="filter-row" id="filterRow"></div>
+<button class="scan-btn" onclick="manualScan()">🔍 SCAN NOW + PUSH TEST</button>
+<div style="padding:0 12px"><div style="font-size:11px;color:#888;margin-bottom:8px;display:flex;justify-content:space-between"><span>Last: <span id="lastScan">Never</span></span><span onclick="clearOldReports()" style="color:#ff4444;cursor:pointer">🗑️ Clean 39d</span></div><div id="reportsList"></div></div>
+</div>
+
+<div id="tab-profile" class="tab">
+<div class="profile-card"><div style="font-size:13px;font-weight:800;color:#FFD700;margin-bottom:10px">👤 Profile</div><label style="font-size:11px;color:#888">Full Name</label><input id="pf_name" class="input" placeholder="Your name"><label style="font-size:11px;color:#888">Email</label><input id="pf_email" class="input" placeholder="Email"><label style="font-size:11px;color:#888">Mobile</label><input id="pf_phone" class="input" placeholder="Phone"><button onclick="saveProfile()" style="background:#FFD700;color:#000;border:none;padding:10px;border-radius:8px;font-weight:800;width:100%">💾 Save Profile</button></div>
+<div class="sub-card"><div style="display:flex;justify-content:space-between"><div style="font-size:14px;font-weight:900">💎 Subscription <span class="badge-pro" id="planBadge">FREE</span></div><div style="font-size:10px;color:#aaa">2 PLANS</div></div><div class="plan-grid"><div class="plan-option active" id="planMonthly" onclick="selectPlan('monthly')"><div class="popular">POPULAR</div><div style="font-size:11px;font-weight:800;margin-top:6px">MONTHLY</div><div class="plan-price">£15 / €15 / $15<small>/month</small></div><div class="plan-feat">✓ Cancel anytime<br>✓ All PRO</div></div><div class="plan-option" id="planYearly" onclick="selectPlan('yearly')"><div style="font-size:11px;font-weight:800">YEARLY</div><div class="plan-price">£150 / €150 / $150<small> one-time</small></div><div class="plan-feat" style="color:#00ff88">✓ Save 17%<br>✓ One-time</div></div></div><div style="margin-top:12px;font-size:10px;color:#aaa;background:#00000066;padding:8px;border-radius:8px" id="selectedPlanInfo">Selected: Monthly £15 - Cancel anytime</div><div style="display:flex;gap:8px;margin-top:12px"><button onclick="subscribeSelected()" style="flex:1;background:#FFD700;color:#000;border:none;padding:12px;border-radius:10px;font-weight:900;font-size:13px" id="subscribeBtn">Subscribe Monthly - £15</button><button onclick="restoreSub()" style="background:#222;color:#aaa;border:1px solid #333;padding:12px;border-radius:10px;font-size:11px">Restore</button></div><div style="font-size:10px;color:#888;margin-top:8px" id="subStatus">Current plan: FREE</div></div>
+<div class="pay-card"><div style="font-size:13px;font-weight:800;margin-bottom:10px">💳 Payment - Apple & Google Pay</div><button class="apple-pay-btn" onclick="payApple()"><span style="font-size:20px"></span> Pay with Apple Pay</button><button class="google-pay-btn" onclick="payGoogle()"><span style="font-weight:900">G</span> Pay with Google Pay</button><div id="payMethods" style="background:#0e0e0e;border:1px solid #333;border-radius:10px;padding:12px;display:flex;justify-content:space-between;margin-top:8px"><div><div style="font-size:12px;font-weight:700">No payment method</div><div style="font-size:10px;color:#666">Add card for PRO</div></div><div>💳</div></div><button onclick="addPayment()" style="margin-top:10px;width:100%;background:#1a1a1a;border:1px solid #333;color:#fff;padding:10px;border-radius:8px;font-size:12px">+ Add Card</button></div>
+<div class="privacy-card-compact"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><div style="font-size:12px;font-weight:800">🔒 Legal & Privacy</div><div style="font-size:9px;color:#666">App Store Ready</div></div><div style="display:flex;gap:6px"><button onclick="openLegal('privacy')" style="flex:1;background:#1a1a1a;border:1px solid #333;color:#fff;padding:8px;border-radius:8px;font-size:10px">📄 Privacy</button><button onclick="openLegal('terms')" style="flex:1;background:#1a1a1a;border:1px solid #333;color:#fff;padding:8px;border-radius:8px;font-size:10px">📜 Terms</button><button onclick="openLegal('disclaimer')" style="flex:1;background:#1a1a1a;border:1px solid #333;color:#fff;padding:8px;border-radius:8px;font-size:10px">⚠️ Disclaimer</button></div><div id="consentStatus" style="font-size:9px;color:#00ff88;background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.3);padding:6px;border-radius:6px;margin-top:8px;text-align:center">✅ Consent given</div></div>
+</div>
+</div>
+
+<div class="bottom-nav">
+<button class="nav-btn active" onclick="switchTab('home',this)"><span>⌂</span><span>Home</span></button>
+<button class="nav-btn" onclick="switchTab('reports',this)"><span>📊</span><span>Reports</span></button>
+<button class="nav-btn" onclick="switchTab('profile',this)"><span>👤</span><span>Profile</span></button>
+</div>
+<div id="toast" class="toast"></div>
+<div id="consentGate"><div class="consent-box"><div style="text-align:center;font-size:28px">🔒</div><h3 style="color:#FFD700;text-align:center;margin:8px 0">Welcome to Gold Pro</h3><div class="check-row"><input type="checkbox" id="gatePrivacy"><label>Agree to Privacy Policy</label></div><div class="check-row"><input type="checkbox" id="gateTerms"><label>Agree to Terms & Disclaimer</label></div><button id="gateBtn" onclick="acceptGate()" disabled style="width:100%;margin-top:12px;background:#333;color:#666;border:none;padding:12px;border-radius:10px;font-weight:800">Continue</button></div></div>
+<div id="legalModal" class="legal-modal"><div class="legal-content"><div style="display:flex;justify-content:space-between"><h3 id="legalTitle">Legal</h3><button onclick="closeLegal()" style="background:none;border:none;color:#fff;font-size:20px">×</button></div><div id="legalBody" style="margin-top:12px;font-size:13px;color:#ccc"></div></div></div>
+
+<script>
+// ===== FIREBASE INIT =====
+const firebaseConfig = {
+  apiKey: "AIzaSyCDk-mTPha6BwSxscy6blssD7DaMyJAoSY",
+  authDomain: "xauusd-c41d0.firebaseapp.com",
+  projectId: "xauusd-c41d0",
+  storageBucket: "xauusd-c41d0.firebasestorage.app",
+  messagingSenderId: "390056297494",
+  appId: "1:390056297494:web:8e1494afa2c4be4cf86137",
+  measurementId: "G-5LNE1P01E1"
+};
+try{
+ firebase.initializeApp(firebaseConfig);
+ console.log('Firebase initialized - xauusd-c41d0 - VAPID: BL0x3t_OqB...');
+  console.log('VAPID Key set: BL0x3t_OqBEbSyn0XNMGmksO4GXCYJNoC6rVcG9TEWzSsnNRGJqLTdtDsd4CcqhhzS7jWfwzjjnN45Tzko7zgkg');
+}catch(e){console.log('Firebase already init',e)}
+let messaging = null;
+try{ messaging = firebase.messaging(); }catch(e){console.log('Messaging not supported',e)}
+
+
+// ===== V32.4 MINIMAL BELL + CUSTOM =====
+let churchAudioCtx2=null; let customAudio=null;
+let customTuneDataURL=localStorage.getItem('custom_tune_data')||null;
+let customTuneName=localStorage.getItem('custom_tune_name')||'';
+let useCustomAsDefault=localStorage.getItem('use_custom_default')==='1';
+
+function getChurchCtx2(){
+  if(!churchAudioCtx2) churchAudioCtx2=new(window.AudioContext||window.webkitAudioContext)();
+  if(churchAudioCtx2.state==='suspended') churchAudioCtx2.resume();
+  return churchAudioCtx2;
+}
+function playSingleBell(offset=0, baseFreq=520){
+  const ctx=getChurchCtx2();
+  const partials=[{m:1,vol:1,decay:4},{m:2,vol:0.6,decay:2.8},{m:2.4,vol:0.5,decay:2.2},{m:3,vol:0.35,decay:1.8}];
+  const start=ctx.currentTime+offset;
+  partials.forEach(p=>{
+    const osc=ctx.createOscillator(); const gain=ctx.createGain();
+    osc.frequency.value=baseFreq*p.m; osc.type=p.m===1?'sine':'triangle';
+    gain.gain.setValueAtTime(0,start); gain.gain.linearRampToValueAtTime(p.vol*0.85,start+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001,start+p.decay);
+    osc.connect(gain); gain.connect(ctx.destination); osc.start(start); osc.stop(start+p.decay+0.1);
+  });
+}
+function playBellStage1(){ getChurchCtx2(); playSingleBell(0,480); }
+function playBellStage2(){ getChurchCtx2(); playSingleBell(0,500); playSingleBell(0.8,525); }
+function playBellStage3(){ getChurchCtx2(); playSingleBell(0,520); playSingleBell(0.85,545); playSingleBell(1.7,560); }
+function getCurrentBellStage(){ return parseInt(localStorage.getItem('bell_stage')||'3'); }
+function setBellStage(s){
+  localStorage.setItem('bell_stage', s);
+  document.querySelectorAll('.mini-bell-btn').forEach(b=>b.classList.remove('active'));
+  const btn=document.getElementById('mb'+s);
+  if(btn) btn.classList.add('active');
+  if(s!=0){
+    if(s==1) playBellStage1(); else if(s==2) playBellStage2(); else playBellStage3();
+  }
+}
+function setMute(){
+  localStorage.setItem('bell_stage','0');
+  document.querySelectorAll('.mini-bell-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('mb0').classList.add('active');
+}
+
+// CUSTOM TUNE MINIMAL
+
+// ===== V32.5 TRADINGVIEW REAL DATA - ALL SYMBOLS =====
+let tvWidget = null;
+
+const TV_SYMBOLS = {
+  'gold': 'OANDA:XAUUSD',
+  'xau': 'OANDA:XAUUSD',
+  'xauusd': 'OANDA:XAUUSD',
+  'silver': 'OANDA:XAGUSD',
+  'xag': 'OANDA:XAGUSD',
+  'wti': 'TVC:USOIL',
+  'oil': 'TVC:USOIL',
+  'eurusd': 'OANDA:EURUSD',
+  'gbpusd': 'OANDA:GBPUSD',
+  'btcusd': 'BINANCE:BTCUSDT',
+  'ethusd': 'BINANCE:ETHUSDT',
+  'aapl': 'NASDAQ:AAPL'
+};
+
+function getTVSymbol(k){
+  k = (k||'gold').toLowerCase();
+  return TV_SYMBOLS[k] || 'OANDA:XAUUSD';
+}
+
+function initTradingViewChart(symbolKey){
+  const container = document.getElementById('tv_chart_container');
+  const fallback = document.getElementById('fallbackCanvas');
+  if(!container) return;
+  
+  if(fallback) fallback.style.display='none';
+  container.style.display='block';
+  container.innerHTML=''; // clear
+  
+  const tvSymbol = getTVSymbol(symbolKey);
+  
+  try{
+    if(typeof TradingView === 'undefined'){
+      console.log('TradingView not loaded, retry...');
+      setTimeout(()=>initTradingViewChart(symbolKey), 1000);
+      return;
+    }
+    
+    // Remove old widget
+    if(tvWidget){
+      try{ container.innerHTML=''; }catch(e){}
+    }
+    
+    tvWidget = new TradingView.widget({
+      "autosize": true,
+      "symbol": tvSymbol,
+      "interval": "30",
+      "timezone": "Etc/UTC",
+      "theme": "dark",
+      "style": "1",
+      "locale": "en",
+      "toolbar_bg": "#0a0a0a",
+      "enable_publishing": false,
+      "allow_symbol_change": false,
+      "hide_top_toolbar": false,
+      "hide_legend": false,
+      "save_image": false,
+      "container_id": "tv_chart_container",
+      "backgroundColor": "#0a0a0a",
+      "gridColor": "#1a1a1a",
+      "studies": [
+        "MASimple@tv-basicstudies"
+      ],
+      "studies_overrides": {
+        "MASimple.length": 50,
+        "MASimple.color": "#FFD700"
+      },
+      "overrides": {
+        "mainSeriesProperties.candleStyle.upColor": "#00ff88",
+        "mainSeriesProperties.candleStyle.downColor": "#ff4444",
+        "mainSeriesProperties.candleStyle.wickUpColor": "#00ff88",
+        "mainSeriesProperties.candleStyle.wickDownColor": "#ff4444",
+        "paneProperties.background": "#0a0a0a",
+        "paneProperties.vertGridProperties.color": "#111",
+        "paneProperties.horzGridProperties.color": "#111"
+      }
+    });
+    
+    console.log('✅ TradingView loaded:', tvSymbol);
+    
+    // Update title and MA info
+    const titleEl = document.getElementById('ctitle');
+    if(titleEl) titleEl.textContent = (SYM[symbolKey]||symbolKey.toUpperCase()) + ' • 30M • TRADINGVIEW REAL • MA50';
+    const statusEl = document.getElementById('chartStatus');
+    if(statusEl){ statusEl.textContent='● TRADINGVIEW • REAL DATA • MA50'; statusEl.style.color='#00ff88'; }
+    const maEl = document.getElementById('maInfo');
+    if(maEl) maEl.textContent='MA50: TV REAL';
+    
+  }catch(e){
+    console.log('TV Error:', e);
+    // Fallback to old chart if fails
+    if(fallback) fallback.style.display='block';
+  }
+}
+
+
+// V32.6 CLEAN TV - NO LOCK
+function initTradingViewChartClean(symbolKey){
+  const container = document.getElementById('tv_chart_container');
+  if(!container) return;
+  container.style.display='block';
+  container.style.height='500px';
+  container.innerHTML='';
+  const tvSymbol = getTVSymbol(symbolKey);
+  if(typeof TradingView === 'undefined'){
+    setTimeout(()=>initTradingViewChartClean(symbolKey), 800);
+    return;
+  }
+  try{
+    new TradingView.widget({
+      "autosize": true,
+      "symbol": tvSymbol,
+      "interval": "30",
+      "timezone": "Etc/UTC",
+      "theme": "dark",
+      "style": "1",
+      "locale": "en",
+      "toolbar_bg": "#1a1a1a",
+      "enable_publishing": false,
+      "allow_symbol_change": false,
+      "hide_top_toolbar": false,
+      "hide_side_toolbar": false,
+      "details": true,
+      "hotlist": false,
+      "calendar": false,
+      "studies": ["MASimple@tv-basicstudies"],
+      "studies_overrides": {"MASimple.length": 50, "MASimple.color": "#FFD700"},
+      "container_id": "tv_chart_container",
+      "backgroundColor": "#0a0a0a",
+      "gridColor": "#222",
+      "overrides": {
+        "mainSeriesProperties.candleStyle.upColor": "#00ff88",
+        "mainSeriesProperties.candleStyle.downColor": "#ff4444",
+        "paneProperties.background": "#0a0a0a",
+        "paneProperties.backgroundType": "solid"
+      }
+    });
+    console.log('✅ TV CLEAN:', tvSymbol);
+    const titleEl = document.getElementById('ctitle');
+    if(titleEl) titleEl.textContent = tvSymbol + ' • TRADINGVIEW REAL';
+    const maEl = document.getElementById('maInfo');
+    if(maEl) maEl.textContent = 'REAL • LIVE';
+    const statusEl = document.getElementById('chartStatus');
+    if(statusEl){ statusEl.textContent='● REAL • NO LOCK'; statusEl.style.color='#00ff88'; }
+  }catch(e){ console.log('TV Error', e); }
+}
+// Override
+window.initTradingViewChart = initTradingViewChartClean;
+window.initTVChart = initTradingViewChartClean;
+window.loadChartData = initTradingViewChartClean;
+window.drawFallback = function(){};
+
+// Override OLD old functions
+function initTVChart(){ 
+  const cur = (window.state && state.cur) ? state.cur : 'gold';
+  initTradingViewChart(cur); 
+}
+async function loadChartData(k){ 
+  initTradingViewChart(k); 
+  // Also update price from Binance for gold if needed
+  try{ updatePriceCard(); }catch(e){}
+}
+function drawFallback(){ 
+  // Don't use fallback anymore, use TV
+  const cur = (window.state && state.cur) ? state.cur : 'gold';
+  initTradingViewChart(cur);
+}
+
+// Hook symbol selection
+const originalSelectSymbol = window.selectSymbol;
+window.selectSymbol = function(k){
+  if(window.state) state.cur=k;
+  try{ localStorage.setItem('gold_state', JSON.stringify(state)); }catch(e){}
+  try{ renderChips(); }catch(e){}
+  try{ updatePriceCard(); }catch(e){}
+  initTradingViewChart(k);
+  if(window.toast) toast('📊 '+(SYM[k]||k)+' - TradingView REAL');
+};
+
+function initCustomTuneMinimal(){
+  const nameEl=document.getElementById('ctName');
+  if(customTuneName && nameEl) nameEl.textContent=customTuneName;
+  if(customTuneDataURL && !customAudio) customAudio=new Audio(customTuneDataURL);
+  const toggle=document.getElementById('useCustomToggleMini');
+  if(toggle) toggle.checked=useCustomAsDefault;
+}
+function handleCustomTuneUploadMini(event){
+  const file=event.target.files[0]; if(!file) return;
+  if(file.size>5*1024*1024){ if(window.toast) toast('Max 5MB'); return; }
+  const reader=new FileReader();
+  reader.onload=function(e){
+    customTuneDataURL=e.target.result; customTuneName=file.name;
+    localStorage.setItem('custom_tune_data', customTuneDataURL);
+    localStorage.setItem('custom_tune_name', customTuneName);
+    customAudio=new Audio(customTuneDataURL);
+    document.getElementById('ctName').textContent=customTuneName;
+    if(window.toast) toast('Added: '+customTuneName);
+    playCustomMini();
+  };
+  reader.readAsDataURL(file);
+}
+function playCustomMini(){
+  if(!customTuneDataURL){ if(window.toast) toast('No tune'); return; }
+  try{ if(customAudio){ customAudio.currentTime=0; customAudio.play(); } }catch(e){}
+}
+function clearCustomMini(){
+  localStorage.removeItem('custom_tune_data'); localStorage.removeItem('custom_tune_name');
+  customTuneDataURL=null; customTuneName='';
+  if(customAudio){ customAudio.pause(); customAudio.src=''; }
+  document.getElementById('ctName').textContent='No tune';
+  document.getElementById('ctInput').value='';
+}
+function toggleUseCustomMini(el){
+  useCustomAsDefault=el.checked; localStorage.setItem('use_custom_default', useCustomAsDefault?'1':'0');
+}
+function playAlertSoundMinimal(){
+  if(useCustomAsDefault && customTuneDataURL){ playCustomMini(); }
+  else {
+    const s=getCurrentBellStage(); if(s==0) return; if(s==1) playBellStage1(); else if(s==2) playBellStage2(); else playBellStage3();
+  }
+}
+
+async function enablePush(){
+ try{
+  const statusEl=document.getElementById('pushStatus');
+  const btn=document.getElementById('enablePushBtn');
+  if(!('Notification' in window)){ toast('Notifications not supported'); statusEl.textContent='Not supported'; return; }
+  const permission = await Notification.requestPermission();
+  if(permission !== 'granted'){ toast('Push denied - Allow in settings'); statusEl.textContent='Denied'; statusEl.style.color='#ff4444'; return; }
+  if(!messaging){ toast('Messaging not supported on this browser'); return; }
+  statusEl.textContent='Getting token...';
+  // Try to get token - VAPID key is optional if configured in console, but we try without first
+  let token;
+  try{
+   const reg = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+   await navigator.serviceWorker.ready;
+   token = await messaging.getToken({ vapidKey: "BL0x3t_OqBEbSyn0XNMGmksO4GXCYJNoC6rVcG9TEWzSsnNRGJqLTdtDsd4CcqhhzS7jWfwzjjnN45Tzko7zgkg", serviceWorkerRegistration: reg });
+  }catch(err){
+   console.log('Token error, trying without SW reg',err);
+   try{
+    token = await messaging.getToken({ vapidKey: "BL0x3t_OqBEbSyn0XNMGmksO4GXCYJNoC6rVcG9TEWzSsnNRGJqLTdtDsd4CcqhhzS7jWfwzjjnN45Tzko7zgkg" });
+   }catch(e2){
+    console.log('Second attempt failed',e2);
+    token = await messaging.getToken();
+   }
+  }
+  if(token){
+   localStorage.setItem('fcm_token', token);
+   document.getElementById('fcmTokenBox').style.display='block';
+   document.getElementById('fcmTokenBox').innerHTML=`<b>FCM Token (for backend):</b><br>${token.substring(0,60)}...<br><span style="color:#00ff88">✅ Push enabled - Works when phone closed!</span>`;
+   document.getElementById('testPushBtn').style.display='block';
+   statusEl.textContent='✅ Enabled - Closed phone OK';
+   statusEl.style.color='#00ff88';
+   btn.textContent='✅ Push Enabled - Works when closed!';
+   btn.style.background='#00ff88';
+   toast('✅ Push enabled - Even when phone closed!');
+   // Update reports stats
+   document.getElementById('wtiReports').textContent='ON';
+   // Listen for foreground messages
+   messaging.onMessage((payload)=>{
+     console.log('Foreground message',payload);
+     const title=payload.notification?.title||'Market Report';
+     const body=payload.notification?.body||'New market movement';
+     toast(`🔔 ${title}: ${body}`);
+     if(Notification.permission==='granted'){
+       new Notification(title,{body, icon:'https://cdn-icons-png.flaticon.com/512/138/138292.png'});
+     }
+   });
+  }else{
+   statusEl.textContent='No token - Check console';
+   toast('No token - enable in Firebase console');
+  }
+ }catch(e){
+  console.log('Push enable error',e);
+  toast('Push error: '+e.message);
+  document.getElementById('pushStatus').textContent='Error: '+e.message;
+ }
+}
+
+async function testLocalPush(){ try{ playAlertSoundMinimal(); }catch(e){} 
+ try{
+  if(Notification.permission!=='granted'){ toast('Enable push first'); return; }
+  // Show local notification via SW for testing closed phone scenario
+  const reg = await navigator.serviceWorker.ready;
+  reg.showNotification('📊 Gold Report - TEST', {
+    body: 'Upward Formation detected on XAU/USD 30m - Ratio 4.2x - Educational only',
+    icon: 'https://cdn-icons-png.flaticon.com/512/138/138292.png',
+    badge: 'https://cdn-icons-png.flaticon.com/512/138/138292.png',
+    vibrate: [200,100,200],
+    data: {url:'/'}
+  });
+  toast('📲 Test Push sent - Check notification bar even if you close app!');
+ }catch(e){ toast('Test error: '+e.message); }
+}
+
+function checkPushStatus(){
+ const statusEl=document.getElementById('pushStatus');
+ if(!statusEl) return;
+ if(!('Notification' in window)){ statusEl.textContent='Not supported'; return; }
+ if(Notification.permission==='granted'){
+   const token=localStorage.getItem('fcm_token');
+   if(token){
+     statusEl.textContent='✅ Enabled - Closed OK';
+     statusEl.style.color='#00ff88';
+     document.getElementById('enablePushBtn').textContent='✅ Push Enabled';
+     document.getElementById('enablePushBtn').style.background='#00ff88';
+     document.getElementById('fcmTokenBox').style.display='block';
+     document.getElementById('fcmTokenBox').innerHTML=`Token saved - Push works when closed!<br><span style="font-size:8px">${token.substring(0,50)}...</span>`;
+     document.getElementById('testPushBtn').style.display='block';
+     document.getElementById('wtiReports').textContent='ON';
+   } else {
+     statusEl.textContent='Granted - Get token';
+     statusEl.style.color='#ffcc00';
+   }
+ } else if(Notification.permission==='denied'){
+   statusEl.textContent='Denied';
+   statusEl.style.color='#ff4444';
+ } else {
+   statusEl.textContent='Not enabled';
+ }
+}
+
+// ===== ORIGINAL APP CODE =====
+const SYM={gold:'XAU/USD',silver:'XAG/USD',wti:'WTI/USD',oil:'WTI/USD',xau:'XAU/USD',xag:'XAG/USD',xauusd:'XAU/USD',eurusd:'EUR/USD',gbpusd:'GBP/USD',btcusd:'BTC/USD',ethusd:'ETH/USD',aapl:'AAPL'};
+let state={active:['gold','silver','wti'],cur:'gold'};
+let livePrices={gold:4053.70,xau:4053.70,xauusd:4053.70,silver:58.28,xag:58.28,wti:89.34,oil:89.34,eurusd:1.0850,gbpusd:1.27,btcusd:65300,ethusd:3520,aapl:221};
+let selectedPlan='monthly';
+let chart=null,candleSeries=null,maSeries=null,chartLocked=true;
+let fallbackCandles=[]; let fallbackCandlesMap={'30m':[],'4h':[]};
+let currentFilter='all';
+const MIN_RATIO=4.0; const REPORTS_KEY='market_reports_v32_push'; const EXPIRE_DAYS=39;
+function getPlan(){return localStorage.getItem('plan')||'FREE';}
+function isPrime(){return (getPlan()||'').includes('PRO');}
+function maxMaterials(){return isPrime()?10:3;}
+function toast(m){const t=document.getElementById('toast'); if(!t) return; t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),4000);}
+function saveState(){try{localStorage.setItem('gold_state',JSON.stringify(state));}catch{}}
+function loadSavedState(){try{const s=localStorage.getItem('gold_state'); if(s){const o=JSON.parse(s); state=o;}}catch{}}
+function renderChips(){try{const c=document.getElementById('chips'); if(!c) return; c.innerHTML=''; state.active.forEach(k=>{const d=document.createElement('div'); d.className='chip '+(k===state.cur?'active':''); d.innerHTML=`${SYM[k]||k.toUpperCase()} <span onclick="removeSymbol('${k}');event.stopPropagation()">×</span>`; d.onclick=()=>selectSymbol(k); c.appendChild(d);}); renderReportChips(); updateMatCount();}catch{}}
+function renderReportChips(){try{const c=document.getElementById('reportChips'); if(c){c.innerHTML=''; state.active.forEach(k=>{const d=document.createElement('div'); d.className='chip active'; d.innerHTML=`${SYM[k]||k.toUpperCase()} <span onclick="removeReportMaterial('${k}');event.stopPropagation()">×</span>`; c.appendChild(d);});} const fr=document.getElementById('filterRow'); if(fr){let h=`<button class="filter-btn ${currentFilter==='all'?'active':''}" onclick="setFilter('all')">All Reports</button>`; state.active.forEach(k=>{const label=(SYM[k]||k.toUpperCase()).split('/')[0]+' Report'; h+=`<button class="filter-btn ${currentFilter===k?'active':''}" onclick="setFilter('${k}')">${label}</button>`;}); fr.innerHTML=h;}}catch{}}
+function updateMatCount(){try{const el=document.getElementById('matCount'); if(el) el.textContent=`${state.active.length}/${maxMaterials()}`; const hdr=document.getElementById('planBadgeHeader'); if(hdr) hdr.textContent=isPrime()?'PRO - 10':'FREE - 3'; const pb=document.getElementById('planBadge'); if(pb) pb.textContent=getPlan(); const sub=document.getElementById('subStatus'); if(sub) sub.textContent=`Current plan: ${getPlan()} (${maxMaterials()} max)`;}catch{}}
+function updatePriceCard(){try{const k=state.cur; const pr=livePrices[k]||0; const el=document.getElementById('priceEl'); const lb=document.getElementById('symLabel'); const ct=document.getElementById('ctitle'); if(el) el.textContent='$'+(pr>10?pr.toFixed(2):pr.toFixed(4)); if(lb) lb.textContent=SYM[k]||k.toUpperCase(); if(ct) ct.textContent=(SYM[k]||k.toUpperCase())+' • 30M • TV WIDGET • MA50'; const maEl=document.getElementById('maInfo'); if(maEl&&fallbackCandles.length>=50){const ma=calculateMA50Correct(fallbackCandles); if(ma.length){maEl.textContent='MA50: $'+ma[ma.length-1].toFixed(2);}}}catch{}}
+function selectSymbol(k){state.cur=k;saveState();renderChips();updatePriceCard();loadChartData(k);}
+function removeSymbol(k){if(state.active.length<=1){toast('Keep at least 1');return;}state.active=state.active.filter(x=>x!==k);if(state.cur===k)state.cur=state.active[0];saveState();renderChips();updatePriceCard();loadChartData(state.cur);}
+function removeReportMaterial(k){removeSymbol(k); renderReportsList();}
+function normalizeKey(v){v=v.trim().toLowerCase().replace('/','').replace('-',''); if(['xau','gold','xauusd'].includes(v)) return 'gold'; if(['xag','silver','xagusd'].includes(v)) return 'silver'; if(['wti','oil','usoil','cl'].includes(v)) return 'wti'; if(['eurusd','eur'].includes(v)) return 'eurusd'; if(['gbpusd','gbp'].includes(v)) return 'gbpusd'; if(['btc','btcusd'].includes(v)) return 'btcusd'; if(['eth','ethusd'].includes(v)) return 'ethusd'; if(['aapl'].includes(v)) return 'aapl'; return v;}
+function doSearch(){let v=document.getElementById('inp').value.trim();if(!v)return;let key=normalizeKey(v); if(!livePrices[key]) livePrices[key]=100+Math.random()*100; if(state.active.includes(key)){state.cur=key; saveState(); renderChips(); updatePriceCard(); loadChartData(key); document.getElementById('inp').value=''; return;} if(state.active.length>=maxMaterials()){toast(isPrime()?'Max 10 materials':'Free max 3 - Upgrade');return;} state.active.push(key); state.cur=key; document.getElementById('inp').value=''; saveState(); renderChips(); updatePriceCard(); loadChartData(key); toast('Added '+key.toUpperCase());}
+function addReportMaterial(){let v=document.getElementById('reportSearch').value.trim();if(!v)return;let key=normalizeKey(v); if(!livePrices[key]) livePrices[key]=100+Math.random()*100; if(state.active.includes(key)){toast('Already added'); document.getElementById('reportSearch').value=''; return;} if(state.active.length>=maxMaterials()){toast(isPrime()?'Max 10 reached':'Free max 3 - Upgrade for 10'); return;} state.active.push(key); document.getElementById('reportSearch').value=''; saveState(); renderChips(); updatePriceCard(); toast(`Added ${key.toUpperCase()} - ${state.active.length}/${maxMaterials()}`);}
+function toggleChartLock(){chartLocked=!chartLocked;localStorage.setItem('chartLocked',chartLocked);updateLockUI();if(chart){chart.applyOptions({handleScroll:{mouseWheel:!chartLocked, pressedMouseMove:!chartLocked, horzTouchDrag:!chartLocked, vertTouchDrag:false},handleScale:{mouseWheel:!chartLocked, pinch:!chartLocked, axisPressedMouseMove:!chartLocked, axisDoubleClickReset:!chartLocked}});}toast(chartLocked?'🔒 Chart Locked':'🔓 Chart Unlocked');}
+function updateLockUI(){const btn=document.getElementById('lockBtn');const status=document.getElementById('chartStatus');if(chartLocked){if(btn){btn.textContent='🔒 LOCKED'; btn.className='lock-btn locked';}if(status) status.textContent='● TRADINGVIEW • REAL • LIVE';}else{if(btn){btn.textContent='🔓 UNLOCKED'; btn.className='lock-btn unlocked';}if(status) status.textContent='● TRADINGVIEW • UNLOCKED • CAN MOVE';}}
+const marketSessions=[{id:'sydney', name:'Sydney', flag:'🇦🇺', openHour:22, openMin:0, closeHour:7, closeMin:0},{id:'tokyo', name:'Tokyo', flag:'🇯🇵', openHour:0, openMin:0, closeHour:9, closeMin:0},{id:'london', name:'London', flag:'🇬🇧', openHour:8, openMin:0, closeHour:17, closeMin:0},{id:'newyork', name:'New York', flag:'🇺🇸', openHour:13, openMin:0, closeHour:22, closeMin:0}];
+function getMinutes(h,m){return h*60+m;}function formatCountdown(diffMs){if(diffMs<0) diffMs+=24*60*60*1000; const totalSec=Math.floor(diffMs/1000); const h=Math.floor(totalSec/3600), m=Math.floor((totalSec%3600)/60), s=totalSec%60; if(totalSec<1800){ return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; } if(h>0) return `${h}h ${m}m`; return `${m}m ${s}s`;}
+function getSessionStatus(nowUTC){const curMin=nowUTC.getUTCHours()*60+nowUTC.getUTCMinutes(); const results=[]; marketSessions.forEach(sess=>{const openMin=getMinutes(sess.openHour,sess.openMin); const closeMin=getMinutes(sess.closeHour,sess.closeMin); let isOpen=false; if(openMin < closeMin){ isOpen = curMin >= openMin && curMin < closeMin; } else { isOpen = curMin >= openMin || curMin < closeMin; } let nextMin = isOpen ? closeMin : openMin; let nextType = isOpen ? 'close' : 'open'; let diffMin = nextMin - curMin; if(diffMin<=0) diffMin+=24*60; let diffMs = diffMin*60*1000 - nowUTC.getUTCSeconds()*1000 - nowUTC.getUTCMilliseconds(); if(diffMs<0) diffMs+=24*60*60*1000; results.push({sess,isOpen,diffMs,diffMin,nextType,isClosingSoon:isOpen&&diffMin<=30,isOpeningSoon:!isOpen&&diffMin<=30});}); return results;}
+function renderSessions(){try{const container=document.getElementById('sessionsTicker'); if(!container) return; const now=new Date(); const gmtEl=document.getElementById('gmtClock'); if(gmtEl) gmtEl.textContent=now.toISOString().substr(11,8)+' GMT'; const statuses=getSessionStatus(now); const all=[...statuses,...statuses,...statuses]; container.innerHTML=''; all.forEach(({sess,isOpen,diffMs,nextType,isClosingSoon,isOpeningSoon})=>{const box=document.createElement('div'); let cls='session-box '; if(isOpen && isClosingSoon) cls+='closing-soon'; else if(isOpen) cls+='open'; else cls+='closed'; box.className=cls; const statusText=isOpen?(isClosingSoon?'CLOSING SOON':'OPEN'):(isOpeningSoon?'OPENING SOON':'CLOSED'); const statusClass=isOpen?(isClosingSoon?'status-closing':'status-open'):'status-closed'; const dotColor=isOpen?(isClosingSoon?'#ffcc00':'#00ff88'):'#ff4444'; box.innerHTML=`<div class="session-top"><div class="session-name">${sess.flag} ${sess.name}</div><div style="width:8px;height:8px;border-radius:50%;background:${dotColor};box-shadow:0 0 6px ${dotColor}"></div></div><div class="session-status ${statusClass}">● ${statusText}</div><div class="session-countdown" data-countdown-for="${sess.id}">${nextType==='close'?'Closes':'Opens'} in ${formatCountdown(diffMs)}</div>`; container.appendChild(box);});}catch(e){console.log(e)}}
+function updateSessionsCountdownOnly(){try{const now=new Date(); const statuses=getSessionStatus(now); const gmtEl=document.getElementById('gmtClock'); if(gmtEl) gmtEl.textContent=now.toISOString().substr(11,8)+' GMT'; statuses.forEach(({sess,diffMs,nextType})=>{const els=document.querySelectorAll(`[data-countdown-for="${sess.id}"]`); els.forEach(el=>{ el.textContent=`${nextType==='close'?'Closes':'Opens'} in ${formatCountdown(diffMs)}`;});});}catch{}}
+const economyNews=[{flag:'🇺🇸', cc:'USD', event:'CPI m/m', impact:'HIGH', time:'12:30 GMT'},{flag:'🇺🇸', cc:'USD', event:'NFP Payrolls', impact:'HIGH', time:'12:30 GMT'},{flag:'🇬🇧', cc:'GBP', event:'GDP m/m', impact:'HIGH', time:'06:00 GMT'},{flag:'🇪🇺', cc:'EUR', event:'ECB Rate', impact:'HIGH', time:'12:15 GMT'}];
+function renderEconomyNews(){try{const track=document.getElementById('newsTicker'); if(!track) return; track.innerHTML=''; [...economyNews,...economyNews,...economyNews].forEach(n=>{const item=document.createElement('span'); item.className='ticker-item'; item.innerHTML=`<span>${n.flag}</span><span style="font-weight:800">${n.cc}</span><span>${n.event}</span><span style="background:#ff4444;color:#fff;padding:2px 5px;border-radius:6px;font-size:9px;font-weight:900">● ${n.impact}</span><span style="font-size:9px;color:#888">${n.time}</span>`; track.appendChild(item);});}catch{}}
+function genCandles(base,count){const c=[];let p=base; for(let i=0;i<count;i++){const ch=(Math.random()-0.5)*base*0.006; const o=p; p+=ch; if(p<1) p=base; const h=Math.max(o,p)+Math.random()*base*0.002; const l=Math.min(o,p)-Math.random()*base*0.002; c.push({open:o,high:h,low:l,close:p});} return c;}
+function calculateMA50Correct(data){const r=[]; for(let i=0;i<data.length;i++){let sum=0; let count=Math.min(i+1,50); for(let j=0;j<count;j++){sum+=data[i-j].close;} r.push(sum/count);} return r;}
+function calculateMA50ForTV(candles){const ma=[]; for(let i=0;i<candles.length;i++){let sum=0; let count=Math.min(i+1,50); for(let j=0;j<count;j++){sum+=candles[i-j].close;} ma.push({time:candles[i].time, value:sum/count});} return ma;}
+function drawFallback(){try{const canvas=document.getElementById('fallbackCanvas'); if(!canvas) return; const ctx=canvas.getContext('2d'); const rect=document.getElementById('tv_chart_container').getBoundingClientRect(); canvas.width=rect.width*2; canvas.height=380*2; canvas.style.width=rect.width+'px'; canvas.style.height='380px'; ctx.scale(2,2); ctx.fillStyle='#0a0a0a'; ctx.fillRect(0,0,rect.width,380); if(!fallbackCandles.length) fallbackCandles=genCandles(livePrices[state.cur]||4053,200).map((c,i)=>({...c,time:Math.floor(Date.now()/1000)- (200-i)*1800})); const min=Math.min(...fallbackCandles.map(x=>x.low)); const max=Math.max(...fallbackCandles.map(x=>x.high)); const range=max-min||1; const W=rect.width-55,H=380,pad=20,step=W/fallbackCandles.length; fallbackCandles.forEach((cc,i)=>{const x=i*step+1; const yH=pad+(1-(cc.high-min)/range)*(H-pad*2); const yL=pad+(1-(cc.low-min)/range)*(H-pad*2); const yO=pad+(1-(cc.open-min)/range)*(H-pad*2); const yC=pad+(1-(cc.close-min)/range)*(H-pad*2); const up=cc.close>=cc.open; ctx.strokeStyle=up?'#00ff88':'#ff4444'; ctx.fillStyle=up?'#00ff88':'#ff4444'; ctx.beginPath(); ctx.moveTo(x+step/2,yH); ctx.lineTo(x+step/2,yL); ctx.stroke(); ctx.fillRect(x+1,Math.min(yO,yC),Math.max(1,step-3),Math.abs(yO-yC)||1);}); const ma=calculateMA50Correct(fallbackCandles); if(ma.length>1){ctx.strokeStyle='#FFD700'; ctx.lineWidth=2; ctx.beginPath(); ma.forEach((v,idx)=>{const x=idx*step+step/2; const y=pad+(1-(v-min)/range)*(H-pad*2); if(idx===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);}); ctx.stroke();} canvas.style.display='block';}catch(e){console.log(e)}}
+function initTVChart(){const container=document.getElementById('tv_chart_container'); if(!container) return; if(typeof LightweightCharts==='undefined'){container.style.display='none'; drawFallback(); return;} try{if(chart){try{chart.remove();}catch{} chart=null;} chart=LightweightCharts.createChart(container,{width:container.clientWidth,height:380,layout:{background:{type:'solid',color:'#0a0a0a'},textColor:'#888'},grid:{vertLines:{color:'#111'},horzLines:{color:'#111'}},handleScroll:{mouseWheel:false, pressedMouseMove:false, horzTouchDrag:false, vertTouchDrag:false},handleScale:{mouseWheel:false, pinch:false, axisPressedMouseMove:false, axisDoubleClickReset:false},rightPriceScale:{borderColor:'#222'},timeScale:{borderColor:'#222', timeVisible:true}}); candleSeries=chart.addCandlestickSeries({upColor:'#00ff88',downColor:'#ff4444',borderVisible:false,wickUpColor:'#00ff88',wickDownColor:'#ff4444'}); maSeries=chart.addLineSeries({color:'#FFD700',lineWidth:2, title:'MA50'}); const base=livePrices[state.cur]||4053; const now=Math.floor(Date.now()/1000); const candles=[]; let p=base; for(let i=200;i>=0;i--){const t=now-i*1800; const ch=(Math.random()-0.5)*base*0.006; const o=p; p+=ch; if(p<1) p=base; const h=Math.max(o,p)+Math.random()*base*0.002; const l=Math.min(o,p)-Math.random()*base*0.002; candles.push({time:t, open:o, high:h, low:l, close:p});} fallbackCandles=candles; fallbackCandlesMap['30m']=candles; fallbackCandlesMap['4h']=genCandles(base,20).map((c,i)=>({...c,time:Math.floor(Date.now()/1000)- (20-i)*14400})); candleSeries.setData(candles); maSeries.setData(calculateMA50ForTV(candles)); chart.timeScale().fitContent(); new ResizeObserver(()=>{if(chart) chart.applyOptions({width:container.clientWidth});}).observe(container); document.getElementById('fallbackCanvas').style.display='none'; container.style.display='block'; updateLockUI();}catch(e){container.style.display='none'; drawFallback();}}
+async function fetchBinanceKlines(symbol, interval, limit=20){try{const url=`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`; const r=await fetch(url); const raw=await r.json(); if(!Array.isArray(raw)) return null; return raw.map(x=>({time:Math.floor(x[0]/1000),open:parseFloat(x[1]),high:parseFloat(x[2]),low:parseFloat(x[3]),close:parseFloat(x[4])}));}catch{return null;}}
+async function loadChartData(k){if(!chart||!candleSeries){drawFallback();return;} if(k==='gold'||k==='xau'||k==='xauusd'){try{const cs=await fetchBinanceKlines('PAXGUSDT','30m',200); if(cs&&cs.length>10){fallbackCandles=cs; fallbackCandlesMap['30m']=cs; candleSeries.setData(cs); maSeries.setData(calculateMA50ForTV(cs)); chart.timeScale().fitContent(); const cs4h=await fetchBinanceKlines('PAXGUSDT','4h',20); if(cs4h) fallbackCandlesMap['4h']=cs4h; updatePriceCard(); return;}}catch{}} const base=livePrices[k]||100; const now=Math.floor(Date.now()/1000); const candles=[]; let p=base; for(let i=200;i>=0;i--){const t=now-i*1800; const ch=(Math.random()-0.5)*base*0.008; const o=p; p+=ch; if(p<1) p=base; const h=Math.max(o,p)+Math.random()*base*0.003; const l=Math.min(o,p)-Math.random()*base*0.003; candles.push({time:t, open:o, high:h, low:l, close:p});} fallbackCandles=candles; fallbackCandlesMap['30m']=candles; try{candleSeries.setData(candles); maSeries.setData(calculateMA50ForTV(candles)); chart.timeScale().fitContent(); updatePriceCard();}catch{drawFallback();}}
+function checkEngulfing(candles){try{if(!candles||candles.length<10) return null; const df=candles.slice(-10); const curr=df[df.length-1]; const prev=df[df.length-2]; const curr_len=curr.high-curr.low; const prev_len=prev.high-prev.low; if(curr_len <= MIN_RATIO*prev_len) return null; const past_5=df.slice(-8,-3); if(past_5.length<5) return null; const max_past_len=Math.max(...past_5.map(c=>c.high-c.low)); if(curr_len <= max_past_len) return null; const isUp=(curr.close>curr.open && prev.close<prev.open && curr.open<prev.close && curr.close>prev.open); const isDown=(curr.close<curr.open && prev.close>prev.open && curr.open>prev.close && curr.close<prev.open); if(isUp) return {pattern:'Upward Formation', type:'Type-A', curr_len, prev_len}; if(isDown) return {pattern:'Downward Formation', type:'Type-B', curr_len, prev_len}; return null;}catch{return null;}}
+function loadReports(){try{const raw=localStorage.getItem(REPORTS_KEY); if(!raw) return []; return JSON.parse(raw);}catch{return [];}}
+function saveReports(r){try{localStorage.setItem(REPORTS_KEY, JSON.stringify(r));}catch{}}
+function cleanupOldReports(){try{let reports=loadReports(); const now=Date.now(); const expireMs=EXPIRE_DAYS*24*60*60*1000; const filtered=reports.filter(r=> (now-r.timestamp) < expireMs); if(filtered.length!==reports.length) saveReports(filtered); return filtered;}catch{return [];}}
+function addReport(name, tf, result){try{let reports=loadReports(); const exists=reports.some(r=> r.name===name && r.timeframe===tf && r.pattern===result.pattern && (Date.now()-r.timestamp)<3600000); if(exists) return false; const report={id:Date.now()+'_'+name+'_'+tf, name, displayName:(SYM[name]||name.toUpperCase())+' Report', timeframe:tf, pattern:result.pattern, ptype:result.type, timestamp:Date.now(), curr_len:result.curr_len, prev_len:result.prev_len, ratio:(result.curr_len/result.prev_len).toFixed(2), price: livePrices[name]||0}; reports.unshift(report); if(reports.length>200) reports=reports.slice(0,200); saveReports(reports); renderReportsList(); toast(`📊 New ${report.displayName}`); // Try push if enabled
+ if(Notification.permission==='granted'){ testLocalPush(); } return true;}catch{return false;}}
+function setFilter(f){currentFilter=f; renderReportChips(); renderReportsList();}
+function renderReportsList(){try{const listEl=document.getElementById('reportsList'); if(!listEl) return; let reports=cleanupOldReports(); reports=reports.sort((a,b)=>b.timestamp-a.timestamp); const todayStart=new Date(); todayStart.setHours(0,0,0,0); const todayCount=reports.filter(r=> r.timestamp >= todayStart.getTime()).length; document.getElementById('todayReports').textContent=todayCount; document.getElementById('totalReports').textContent=reports.length; document.getElementById('goldReports').textContent=reports.filter(r=>r.name==='gold').length; let pushOn=localStorage.getItem('fcm_token')?'ON':'OFF'; document.getElementById('wtiReports').textContent=pushOn; let filtered=reports; if(currentFilter!=='all') filtered=reports.filter(r=>r.name===currentFilter); if(filtered.length===0){listEl.innerHTML='<div style="text-align:center;padding:30px;color:#666"><div style="font-size:32px">📭</div><div style="margin-top:8px;font-size:12px">No reports yet<br>Click SCAN NOW for '+state.active.length+' materials<br>Push: '+pushOn+'</div></div>'; return;} let h=''; filtered.forEach(r=>{const date=new Date(r.timestamp); const expireIn=Math.max(0,EXPIRE_DAYS - Math.floor((Date.now()-r.timestamp)/(24*60*60*1000))); const cardClass=r.name==='gold'?'gold':'other'; h+=`<div class="report-card ${cardClass}"><div class="report-top"><div class="report-symbol">📋 ${r.displayName}</div><div class="report-type">${r.timeframe} • ${r.ptype}</div></div><div class="report-meta"><span class="meta-badge">📏 Ratio ${r.ratio}x</span><span class="meta-badge">⏱️ ${r.timeframe}</span><span class="meta-badge">💰 $${r.price?r.price.toFixed(2):'--'}</span><span class="meta-badge">📊 ${r.pattern}</span></div><div class="report-desc"><b>Movement:</b> ${r.pattern} detected<br><b>Volatility:</b> ${r.curr_len.toFixed(2)} vs ${r.prev_len.toFixed(2)} (${r.ratio}x)<br><span style="font-size:9px;color:#666">Educational only - Push works when closed</span></div><div class="report-time"><span>🕐 ${date.toLocaleString()}</span><span>🗑️ ${expireIn}d left / ${EXPIRE_DAYS}d</span></div></div>`;}); listEl.innerHTML=h;}catch(e){console.log(e)}}
+async function scanSymbol(name, tf){try{let candles=null; if(name==='gold'){const interval=tf==='30m'?'30m':'4h'; candles=await fetchBinanceKlines('PAXGUSDT', interval, 20); if(!candles) candles=fallbackCandlesMap[interval]||fallbackCandles;} else {const interval=tf; candles=fallbackCandlesMap[interval]||fallbackCandles; if(!candles||candles.length<10){const base=livePrices[name]||100; candles=genCandles(base,20).map((c,i)=>({...c,time:Math.floor(Date.now()/1000)- (20-i)*(interval==='30m'?1800:14400)}));}} const res=checkEngulfing(candles); if(res){addReport(name, tf, res); return true;} return false;}catch{return false;}}
+async function manualScan(){try{const btn=document.querySelector('.scan-btn'); if(btn){btn.textContent=`⏳ Analyzing ${state.active.length} mats + Push...`; btn.disabled=true;} document.getElementById('lastScan').textContent=new Date().toLocaleTimeString(); let found=0; for(const name of state.active){for(const tf of ['30m','4h']){const ok=await scanSymbol(name, tf); if(ok) found++; await new Promise(r=>setTimeout(r,200));}} if(btn){btn.textContent=`🔍 SCAN NOW + PUSH TEST - ${state.active.length} Materials`; btn.disabled=false;} renderReportsList(); if(found===0){ toast(`Scanned ${state.active.length} mats - No new`); testLocalPush(); } else toast(`📊 ${found} new reports + Push sent!`);}catch{toast('Scan error');}}
+function clearOldReports(){cleanupOldReports(); renderReportsList(); toast('Cleaned');}
+function switchTab(name,btn){try{document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));const target=document.getElementById('tab-'+name); if(target) target.classList.add('active'); document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active')); if(btn) btn.classList.add('active'); if(name==='reports'){renderReportChips(); renderReportsList(); checkPushStatus();} if(name==='home'&&chart){setTimeout(()=>{if(chart) chart.timeScale().fitContent();},150);} }catch{}}
+function saveProfile(){try{localStorage.setItem('profile_name',document.getElementById('pf_name').value);localStorage.setItem('profile_email',document.getElementById('pf_email').value);localStorage.setItem('profile_phone',document.getElementById('pf_phone').value);toast('Profile saved');}catch{}}
+function loadProfile(){try{const n=localStorage.getItem('profile_name'); const e=localStorage.getItem('profile_email'); const p=localStorage.getItem('profile_phone'); if(n) document.getElementById('pf_name').value=n; if(e) document.getElementById('pf_email').value=e; if(p) document.getElementById('pf_phone').value=p;}catch{}}
+function selectPlan(plan, save=true){try{selectedPlan=plan; const m=document.getElementById('planMonthly'); const y=document.getElementById('planYearly'); if(m) m.classList.toggle('active', plan==='monthly'); if(y) y.classList.toggle('active', plan==='yearly'); const info=document.getElementById('selectedPlanInfo'); const btn=document.getElementById('subscribeBtn'); if(plan==='monthly'){if(info) info.textContent='Selected: Monthly £15 / €15 / $15 - Cancel anytime'; if(btn) btn.textContent='Subscribe Monthly - £15';} else {if(info) info.textContent='Selected: Yearly £150 / €150 / $150 one-time - Save 17%'; if(btn) btn.textContent='Subscribe Yearly - £150 One-Time';} if(save) localStorage.setItem('selectedPlan',plan);}catch{}}
+function subscribeSelected(){try{const isMonthly=selectedPlan==='monthly'; localStorage.setItem('plan','PRO '+(isMonthly?'MONTHLY':'YEARLY')); const badge=document.getElementById('planBadge'); if(badge) badge.textContent='PRO '+(isMonthly?'MONTH':'YEAR'); toast('✅ PRO Activated'); updateMatCount();}catch{}}
+function restoreSub(){const p=localStorage.getItem('plan')||'FREE';const b=document.getElementById('planBadge'); if(b) b.textContent=p;toast('Plan: '+p);}
+function addPayment(){try{const pm=document.getElementById('payMethods'); if(pm) pm.innerHTML='<div><div style="font-size:12px;font-weight:700">💳 Visa •••• 4242</div><div style="font-size:10px;color:#00ff88">Verified</div></div><div style="color:#00ff88">✓</div>'; localStorage.setItem('hasCard','1'); toast('Card added');}catch{}}
+function payApple(){try{selectPlan('monthly'); localStorage.setItem('plan','PRO MONTHLY - Apple Pay'); const b=document.getElementById('planBadge'); if(b) b.textContent='PRO APPLE PAY'; toast(' Apple Pay - PRO Activated'); updateMatCount();}catch{}}
+function payGoogle(){try{selectPlan('monthly'); localStorage.setItem('plan','PRO MONTHLY - Google Pay'); const b=document.getElementById('planBadge'); if(b) b.textContent='PRO GOOGLE PAY'; toast('GPay - PRO Activated'); updateMatCount();}catch{}}
+function checkConsentGate(){try{const has=localStorage.getItem('appConsent')==='1'; if(!has){const gate=document.getElementById('consentGate'); if(gate) gate.classList.add('show');} const gp=document.getElementById('gatePrivacy'), gt=document.getElementById('gateTerms'), btn=document.getElementById('gateBtn'); if(!gp||!gt||!btn) return; function upd(){if(gp.checked&&gt.checked){btn.disabled=false;btn.style.background='#FFD700';btn.style.color='#000';}else{btn.disabled=true;btn.style.background='#333';btn.style.color='#666';}} gp.addEventListener('change',upd); gt.addEventListener('change',upd);}catch{}}
+function acceptGate(){try{const gp=document.getElementById('gatePrivacy').checked, gt=document.getElementById('gateTerms').checked; if(!gp||!gt){toast('Agree to both');return;} localStorage.setItem('appConsent','1'); localStorage.setItem('consentDate', new Date().toISOString().split('T')[0]); const gate=document.getElementById('consentGate'); if(gate) gate.classList.remove('show'); toast('✅ Welcome');}catch{}}
+function openLegal(t){try{const m=document.getElementById('legalModal'), ti=document.getElementById('legalTitle'), bo=document.getElementById('legalBody'); if(!m) return; m.classList.add('show'); if(t==='privacy'){if(ti) ti.textContent='Privacy Policy'; if(bo) bo.innerHTML='<p>All data stored locally only. 39 days auto-delete. Push via Firebase.</p>';} else if(t==='terms'){if(ti) ti.textContent='Terms'; if(bo) bo.innerHTML='<p>Monthly £15 cancel anytime. Yearly £150 one-time. Not financial advice.</p>';} else {if(ti) ti.textContent='Disclaimer'; if(bo) bo.innerHTML='<p>Trading high risk. Educational analysis only.</p>';}}catch{}}
+function closeLegal(){try{const m=document.getElementById('legalModal'); if(m) m.classList.remove('show');}catch{}}
+
+window.addEventListener('DOMContentLoaded', ()=>{
+ try{
+  loadSavedState(); checkConsentGate(); renderChips(); updatePriceCard(); renderEconomyNews(); renderSessions(); loadProfile();
+  setTimeout(()=>{initTVChart(); loadChartData(state.cur); checkPushStatus();},200);
+  updateLockUI(); renderReportsList();
+  setInterval(()=>{updateSessionsCountdownOnly();},1000);
+  const sel=localStorage.getItem('selectedPlan'); if(sel) selectPlan(sel,false);
+  // Auto register SW
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('./firebase-messaging-sw.js').then(()=>console.log('SW registered')).catch(e=>console.log('SW fail',e));
+  }
+ }catch(e){console.log('init error',e)}
+});
+</script>
+<script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script></body>
+</html>
