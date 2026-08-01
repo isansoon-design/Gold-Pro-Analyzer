@@ -109,7 +109,7 @@ const THIRTY_MIN = 30 * 60 * 1000;
 const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
 
 /* WebSocket — set your live server URL here (wss:// preferred) */
-const WS_URL = (typeof localStorage !== "undefined" && localStorage.getItem("gp_ws_url")) || "wss://api.goldpro.uk/ws/reports";
+const WS_URL = (typeof localStorage !== "undefined" && localStorage.getItem("gp_ws_url")) || "ws://162.55.218.11:8080";
 const WS_RECONNECT_MS = 4000;
 
 function detectCurrency() {
