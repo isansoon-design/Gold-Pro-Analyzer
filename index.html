@@ -229,7 +229,7 @@ async function fetchCandles(symbol, tf) {
   } catch (e) {}
   const seed = symbol.split("").reduce(function(a, c) { return a + c.charCodeAt(0); }, 0);
   var price = 2000 + (seed % 200);
-  if (symbol.indexOf("WTI") >= 0 || symbol.indexOf("OIL") >= 0) price = 80 + (seed % 20);
+  if (symbol.indexOf("WTI") >= 0 || symbol.indexOf("OIL") >= 0) price = 84 + (seed % 8) + Math.random() * 3;
   if (symbol.indexOf("EUR") >= 0 || symbol.indexOf("GBP") >= 0) price = 1.05 + (seed % 30) / 100;
   if (symbol.indexOf("BTC") >= 0) price = 60000 + (seed % 5000);
   if (symbol === "AAPL" || symbol === "APPLE") price = 180 + (seed % 40);
