@@ -1,0 +1,2289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gold Pro — Dark Terminal</title>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone@7.26.0/babel.min.js"></script>
+  <style>
+    html[data-theme="light"] body { background: #f4f4f5 !important; color: #111 !important; }
+    html[data-theme="light"] .gp-shell { background: #f4f4f5 !important; color: #111 !important; }
+    html[data-theme="light"] .gp-card { background: #fff !important; border-color: #ddd !important; color: #111 !important; }
+    html[data-theme="light"] .gp-muted { color: #666 !important; }
+    html[data-theme="light"] input { background: #fff !important; color: #111 !important; border-color: #ccc !important; }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #root { min-height: 100%; }
+    body {
+      margin: 0;
+      background: #000;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow-x: hidden;
+      max-width: 100vw;
+    }
+    ::-webkit-scrollbar { width: 0; height: 0; }
+    @keyframes tickerScrollX {
+      0% { transform: translate3d(0,0,0); }
+      100% { transform: translate3d(-50%,0,0); }
+    }
+    .ticker-track {
+      will-change: transform;
+      animation: tickerScrollX 28s linear infinite;
+    }
+    .ticker-track.slow { animation-duration: 42s; }
+    .ticker-track:hover { animation-play-state: paused !important; }
+    button { font-family: inherit; cursor: pointer; }
+    input { font-family: inherit; }
+    .active-scale:active { transform: scale(0.95); }
+    .report-body { font-size: 1.25em; line-height: 1.55; }
+    .report-body .huge { font-size: 1.35em; font-weight: 800; }
+    .report-body .section-title {
+      font-size: 0.95em;
+      font-weight: 800;
+      color: #aaa;
+      margin: 18px 0 8px;
+      letter-spacing: 0.02em;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+const SESSIONS = [
+  { name: "Sydney", flag: "🇦🇺", open: 22, close: 7 },
+  { name: "Tokyo", flag: "🇯🇵", open: 0, close: 9 },
+  { name: "London", flag: "🇬🇧", open: 7, close: 16 },
+  { name: "Frankfurt", flag: "🇩🇪", open: 7, close: 16 },
+  { name: "New York", flag: "🇺🇸", open: 12, close: 21 },
+];
+
+const CURRENCY_FLAGS = {
+  USD: "🇺🇸", EUR: "🇪🇺", GBP: "🇬🇧", JPY: "🇯🇵",
+  AUD: "🇦🇺", CAD: "🇨🇦", NZD: "🇳🇿", CHF: "🇨🇭", CNY: "🇨🇳", CNH: "🇨🇳",
+};
+
+const FALLBACK_NEWS = [
+  { time: "19:00", flag: "🇺🇸", title: "Fed Funds Target Rate", impact: "HIGH" },
+  { time: "12:30", flag: "🇺🇸", title: "US Core CPI (YoY)", impact: "HIGH" },
+  { time: "14:00", flag: "🇺🇸", title: "FOMC Press Conference", impact: "HIGH" },
+  { time: "08:30", flag: "🇬🇧", title: "UK GDP (QoQ)", impact: "HIGH" },
+  { time: "07:00", flag: "🇬🇧", title: "BoE Interest Rate Decision", impact: "HIGH" },
+  { time: "07:15", flag: "🇪🇺", title: "ECB Interest Rate Decision", impact: "HIGH" },
+  { time: "23:50", flag: "🇯🇵", title: "BoJ Monetary Policy Statement", impact: "HIGH" },
+  { time: "01:30", flag: "🇦🇺", title: "AU Employment Change", impact: "HIGH" },
+  { time: "13:30", flag: "🇺🇸", title: "Non-Farm Payrolls", impact: "HIGH" },
+];
+
+const TV_SYMBOLS = {
+  XAUUSD: "OANDA:XAUUSD", GOLD: "OANDA:XAUUSD",
+  XAGUSD: "OANDA:XAGUSD", SILVER: "OANDA:XAGUSD",
+  WTIUSD: "TVC:USOIL", WTI: "TVC:USOIL", USOIL: "TVC:USOIL",
+  GBPUSD: "OANDA:GBPUSD", EURUSD: "OANDA:EURUSD",
+  USDJPY: "OANDA:USDJPY", GBPJPY: "OANDA:GBPJPY", EURJPY: "OANDA:EURJPY",
+  BTCUSD: "BINANCE:BTCUSDT", BITCOIN: "BINANCE:BTCUSDT",
+  AAPL: "NASDAQ:AAPL", APPLE: "NASDAQ:AAPL",
+};
+
+const DISPLAY = {
+  XAUUSD: "XAU/USD", GOLD: "XAU/USD", XAGUSD: "XAG/USD", SILVER: "XAG/USD",
+  WTIUSD: "WTI/USD", WTI: "WTI/USD", GBPUSD: "GBP/USD", EURUSD: "EUR/USD",
+  USDJPY: "USD/JPY", GBPJPY: "GBP/JPY", EURJPY: "EUR/JPY",
+  BTCUSD: "BTC/USD", AAPL: "AAPL/USD", APPLE: "AAPL/USD",
+};
+
+const BINANCE_MAP = {
+  BTCUSD: "BTCUSDT", BITCOIN: "BTCUSDT"
+};
+
+/* Realistic anchors when live APIs fail or return nonsense */
+const REF_PRICE = {
+  XAUUSD: 4055, GOLD: 4055, XAGUSD: 57.6, SILVER: 57.6,
+  WTIUSD: 78, WTI: 78, USOIL: 78,
+  GBPUSD: 1.35, EURUSD: 1.16, USDJPY: 149.5,
+  GBPJPY: 200, EURJPY: 172,
+  BTCUSD: 95000, BITCOIN: 95000,
+  AAPL: 220, APPLE: 220
+};
+
+/* Yahoo symbols aligned with TradingView market prices */
+const YAHOO_SYMBOL = {
+  XAUUSD: "GC=F", GOLD: "GC=F", XAGUSD: "SI=F", SILVER: "SI=F",
+  WTIUSD: "CL=F", WTI: "CL=F", USOIL: "CL=F",
+  GBPUSD: "GBPUSD=X", EURUSD: "EURUSD=X", USDJPY: "USDJPY=X",
+  GBPJPY: "GBPJPY=X", EURJPY: "EURJPY=X",
+  BTCUSD: "BTC-USD", BITCOIN: "BTC-USD",
+  AAPL: "AAPL", APPLE: "AAPL"
+};
+
+const TIMEFRAMES = ["1", "30", "60", "240", "D"];
+
+const LEGAL_TERMS = `═══════════════════════════════════════════════════════════════
+                   TERMS & CONDITIONS
+                        Gold Pro
+═══════════════════════════════════════════════════════════════
+
+Last Updated: August 2026
+
+1. NATURE OF SERVICE
+  Gold Pro is a market analysis and pattern recognition tool 
+  provided for educational and informational purposes ONLY. 
+  We do NOT provide financial advice, investment recommendations, 
+  brokerage services, or trading signals.
+
+2. NOT FINANCIAL ADVICE
+  All content, reports, data visualizations, pattern matches, 
+  "Market Memory" insights, and analysis generated by the 
+  application are for informational purposes only. They do NOT 
+  constitute an offer, solicitation, or recommendation to buy, 
+  sell, or hold any financial instrument.
+
+  You acknowledge that any trading or investment decision you make 
+  is based solely on your own judgment and at your own risk.
+
+3. PAST PERFORMANCE DISCLAIMER
+  Historical data, pattern matches, and backtested results 
+  displayed within the application are based on past market 
+  conditions. PAST PERFORMANCE DOES NOT GUARANTEE OR PREDICT 
+  FUTURE RESULTS. Market conditions change, and historical 
+  patterns may not repeat.
+
+4. NO LIABILITY
+  To the maximum extent permitted by applicable law, Gold Pro, 
+  its developers, affiliates, and data providers shall NOT be 
+  liable for any direct, indirect, incidental, consequential, or 
+  punitive damages arising from:
+  - Your use of or inability to use the application;
+  - Any trading losses, missed opportunities, or financial 
+    decisions made based on application content;
+  - Delays, inaccuracies, or interruptions in data delivery.
+
+  You assume FULL RESPONSIBILITY for all trading and investment 
+  decisions and their outcomes.
+
+5. SUBSCRIPTION & BILLING
+  - Gold Pro offers a monthly subscription at £15.00 GBP.
+  - Subscriptions automatically renew unless cancelled at least 
+    24 hours before the current billing period ends.
+  - You may cancel anytime through your account settings.
+  - No refunds will be issued for partial subscription periods.
+  - Prices are subject to change with prior notice.
+
+6. DATA ACCURACY
+  While we strive to provide accurate and timely market data, 
+  we do not guarantee the completeness, accuracy, or timeliness 
+  of any data displayed. Market data is sourced from third-party 
+  providers and may be delayed.
+
+7. INTELLECTUAL PROPERTY
+  All content, algorithms, designs, trademarks, and proprietary 
+  technology within Gold Pro are owned by us and protected by 
+  intellectual property laws. You may not copy, modify, 
+  distribute, or reverse-engineer any part of the application.
+
+8. PROHIBITED USE
+  You agree NOT to:
+  - Use the application for unlawful purposes;
+  - Attempt to interfere with or disrupt the service;
+  - Reproduce or resell application data or reports;
+  - Use automated systems (bots, scrapers) to access the app.
+
+9. TERMINATION
+  We reserve the right to suspend or terminate your access to 
+  the application at any time, without notice, for conduct that 
+  we believe violates these Terms or is harmful to other users 
+  or our business.
+
+10. GOVERNING LAW
+   These Terms shall be governed by and construed in accordance 
+   with the laws of the United Kingdom. Any disputes shall be 
+   resolved exclusively in the courts of the United Kingdom.
+
+11. CHANGES TO TERMS
+   We may update these Terms from time to time. Continued use of 
+   the application after changes constitutes acceptance of the 
+   revised Terms.
+
+12. CONTACT
+   For questions regarding these Terms, contact us at: 
+   sabaghb@hotmail.com
+`;
+const LEGAL_PRIVACY = `═══════════════════════════════════════════════════════════════
+                     PRIVACY POLICY
+                        Gold Pro
+═══════════════════════════════════════════════════════════════
+
+Last Updated: August 2026
+
+1. INTRODUCTION
+  Gold Pro ("we", "our", or "us") respects your privacy. This 
+  Privacy Policy explains how we collect, use, store, and 
+  protect your personal information when you use our application.
+
+2. INFORMATION WE COLLECT
+  a) Account Information: Email address, name (if provided), 
+     and subscription status.
+  b) Usage Data: App interactions, features accessed, report 
+     views, and session duration.
+  c) Device Information: Device type, operating system, and 
+     IP address.
+  d) Preferences: Watchlists and favorite assets (stored locally).
+  e) Crash Data: Anonymous error logs to help us improve stability.
+
+  WE DO NOT COLLECT:
+  - Financial account numbers or bank details;
+  - Trading account credentials;
+  - Personal financial information.
+
+3. HOW WE USE YOUR INFORMATION
+  - To provide and maintain the application service;
+  - To process subscription payments;
+  - To send service-related notifications;
+  - To analyze app usage and improve features;
+  - To diagnose technical issues.
+
+  WE DO NOT:
+  - Sell your personal data to third parties;
+  - Use your data for targeted advertising of financial products;
+  - Share identifiable data with unauthorized third parties.
+
+4. DATA STORAGE & SECURITY
+  - Personal data is stored securely with encryption where applicable.
+  - We implement industry-standard security measures.
+  - No internet transmission is 100% secure.
+
+5. THIRD-PARTY SERVICES
+  - Market data and chart providers (e.g. TradingView);
+  - Hosting and domain providers.
+
+  These services operate under their own privacy policies.
+
+6. YOUR RIGHTS
+  You may have the right to access, correct, or delete your data.
+  Contact: sabaghb@hotmail.com
+
+7. DATA RETENTION
+  We retain personal information only as long as necessary to 
+  provide the service or comply with legal obligations.
+
+8. CHILDREN'S PRIVACY
+  Gold Pro is not intended for users under the age of 18. We do 
+  not knowingly collect personal information from minors.
+
+9. CHANGES TO THIS POLICY
+  We may update this Privacy Policy periodically. Continued use 
+  after updates constitutes acceptance.
+
+10. CONTACT US
+   Email: sabaghb@hotmail.com
+`;
+const LEGAL_DISCLAIMER = `Gold Pro is for educational and informational purposes only. It does not provide financial advice, investment recommendations, or trading signals. Past performance does not guarantee future results. Market data may be delayed. You are solely responsible for your trading and investment decisions.`;
+
+const NEWS_SOURCES = [
+  "Bloomberg", "CNBC", "Reuters", "CNN Business", "MarketWatch",
+  "Yahoo Finance", "Financial Times", "Wall Street Journal", "Investing.com", "FXStreet",
+];
+
+const NEWS_LOGOS = {
+  "Bloomberg": "https://www.google.com/s2/favicons?domain=bloomberg.com&sz=64",
+  "CNBC": "https://www.google.com/s2/favicons?domain=cnbc.com&sz=64",
+  "Reuters": "https://www.google.com/s2/favicons?domain=reuters.com&sz=64",
+  "CNN Business": "https://www.google.com/s2/favicons?domain=cnn.com&sz=64",
+  "MarketWatch": "https://www.google.com/s2/favicons?domain=marketwatch.com&sz=64",
+  "Yahoo Finance": "https://www.google.com/s2/favicons?domain=finance.yahoo.com&sz=64",
+  "Financial Times": "https://www.google.com/s2/favicons?domain=ft.com&sz=64",
+  "Wall Street Journal": "https://www.google.com/s2/favicons?domain=wsj.com&sz=64",
+  "Investing.com": "https://www.google.com/s2/favicons?domain=investing.com&sz=64",
+  "FXStreet": "https://www.google.com/s2/favicons?domain=fxstreet.com&sz=64"
+};
+
+const NEWS_LINKS = {
+  "Bloomberg": "https://www.bloomberg.com/markets",
+  "CNBC": "https://www.cnbc.com/markets/",
+  "Reuters": "https://www.reuters.com/markets/",
+  "CNN Business": "https://www.cnn.com/business",
+  "MarketWatch": "https://www.marketwatch.com/",
+  "Yahoo Finance": "https://finance.yahoo.com/",
+  "Financial Times": "https://www.ft.com/markets",
+  "Wall Street Journal": "https://www.wsj.com/market-data",
+  "Investing.com": "https://www.investing.com/",
+  "FXStreet": "https://www.fxstreet.com/"
+};
+
+function tvSymbolFor(material) {
+  var m = (material || "").toUpperCase();
+  if (m.indexOf("XAU") >= 0 || m === "GOLD") return "OANDA:XAUUSD";
+  if (m.indexOf("XAG") >= 0 || m === "SILVER") return "OANDA:XAGUSD";
+  if (m.indexOf("WTI") >= 0 || m.indexOf("OIL") >= 0) return "TVC:USOIL";
+  if (m.indexOf("BTC") >= 0) return "BINANCE:BTCUSDT";
+  if (m.indexOf("EUR") >= 0) return "FX:EURUSD";
+  if (m.indexOf("GBP") >= 0) return "FX:GBPUSD";
+  if (m.indexOf("JPY") >= 0) return "FX:USDJPY";
+  if (m.indexOf("AAPL") >= 0 || m === "APPLE") return "NASDAQ:AAPL";
+  return "OANDA:XAUUSD";
+}
+
+const MATERIALS = ["XAUUSD", "WTIUSD", "XAGUSD", "EURUSD", "GBPUSD", "USDJPY", "BTCUSD", "AAPL", "GBPJPY", "EURJPY"];
+const DEFAULT_FAVORITES = MATERIALS.slice();
+function loadFavorites() {
+  try {
+    var raw = localStorage.getItem("gp_favorites");
+    if (!raw) return DEFAULT_FAVORITES.slice();
+    var arr = JSON.parse(raw);
+    if (!Array.isArray(arr) || !arr.length) return DEFAULT_FAVORITES.slice();
+    return arr.map(function(s) {
+      return String(s || "").toUpperCase().replace(/[\/\s_]/g, "");
+    }).filter(Boolean).slice(0, 12);
+  } catch (e) { return DEFAULT_FAVORITES.slice(); }
+}
+const THIRTY_MIN = 30 * 60 * 1000;
+const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+
+/* WebSocket — set your live server URL here (wss:// preferred) */
+const WS_URL = (typeof localStorage !== "undefined" && localStorage.getItem("gp_ws_url")) || "wss://goldproanalyzer.com/ws";
+const WS_RECONNECT_MS = 4000;
+const API_BASE = (typeof localStorage !== "undefined" && localStorage.getItem("gp_api_base")) || (typeof location !== "undefined" ? (location.origin + "/api") : "https://goldproanalyzer.com/api");
+
+function detectCurrency() {
+  try {
+    const lang = (navigator.language || "en-US").toLowerCase();
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+    if (lang.startsWith("en-gb") || tz.includes("London") || tz === "Europe/London")
+      return { symbol: "£", code: "GBP", monthly: 15, yearly: 150 };
+    const euLangs = ["de","fr","it","es","nl","pt","pl","ro","cs","hu","sk","fi","sv","da","el","bg","hr","lt","lv","et","sl","mt","ga"];
+    const euTz = ["Europe/Berlin","Europe/Paris","Europe/Rome","Europe/Madrid","Europe/Amsterdam","Europe/Brussels","Europe/Vienna","Europe/Warsaw","Europe/Lisbon","Europe/Athens","Europe/Dublin","Europe/Zurich","Europe/Stockholm","Europe/Helsinki","Europe/Prague","Europe/Budapest"];
+    if (euLangs.some(l => lang.startsWith(l)) || euTz.some(t => tz === t || tz.includes(t.replace("Europe/",""))) || lang.startsWith("en-ie") || lang.startsWith("en-mt"))
+      return { symbol: "€", code: "EUR", monthly: 17, yearly: 170 };
+  } catch {}
+  return { symbol: "$", code: "USD", monthly: 19, yearly: 190 };
+}
+
+function utcMinutes() {
+  const d = new Date();
+  return d.getUTCHours() * 60 + d.getUTCMinutes();
+}
+
+function sessionStatus(s, now) {
+  const openM = s.open * 60, closeM = s.close * 60;
+  if (closeM < openM) {
+    if (now >= openM || now < closeM) return "open";
+    let left = openM - now; if (left < 0) left += 1440;
+    return left <= 30 ? "soon" : "closed";
+  }
+  if (now >= openM && now < closeM) return "open";
+  let left = openM - now; if (left < 0) left += 1440;
+  return left <= 30 ? "soon" : "closed";
+}
+
+function minsToClose(s, now) {
+  const closeM = s.close * 60, openM = s.open * 60;
+  if (closeM < openM) {
+    if (now >= openM) return 1440 - now + closeM;
+    return closeM - now;
+  }
+  return closeM - now;
+}
+
+function minsToOpen(openH, now) {
+  let r = openH * 60 - now;
+  if (r < 0) r += 1440;
+  return r;
+}
+
+function fmtMins(m) {
+  const h = Math.floor(m / 60), mm = m % 60;
+  return h > 0 ? `${h}h ${String(mm).padStart(2, "0")}m` : `${mm}m`;
+}
+
+function normalizeSymbol(raw) {
+  let s = (raw || "").toUpperCase().replace(/[\/\s_]/g, "");
+  if (s === "GOLD") s = "XAUUSD";
+  if (s === "WTI") s = "WTIUSD";
+  if (s === "APPLE") s = "AAPL";
+  if (s === "SILVER") s = "XAGUSD";
+  if (s === "BITCOIN") s = "BTCUSD";
+  if (s === "EURIPY") s = "EURJPY";
+  return s || "XAUUSD";
+}
+
+function downloadText(filename, text, mime) {
+  const blob = new Blob([text], { type: mime || "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function formatReportStamp(ts) {
+  const d = new Date(ts);
+  const date = d.toUTCString().slice(5, 16);
+  const time = String(d.getUTCHours()).padStart(2, "0") + ":" + String(d.getUTCMinutes()).padStart(2, "0") + " UTC";
+  return { date: date, time: time, full: date + " • " + time };
+}
+
+function pricePrefix(symbol) {
+  if (["XAUUSD", "GOLD", "XAGUSD", "SILVER", "WTIUSD", "WTI", "AAPL", "APPLE"].includes(symbol)) return "$";
+  return "";
+}
+
+async function fetchCandles(symbol, tf) {
+  var ref = REF_PRICE[symbol] || 100;
+
+  // FX majors: Frankfurter (ECB) first — CORS-friendly and accurate
+  var fxMap = { GBPUSD: ["GBP", "USD"], EURUSD: ["EUR", "USD"], USDJPY: ["USD", "JPY"] };
+  var fx = fxMap[symbol];
+  if (fx) {
+    try {
+      var fUrl = "https://api.frankfurter.app/latest?from=" + fx[0] + "&to=" + fx[1];
+      var fRes = await fetch(fUrl);
+      if (fRes.ok) {
+        var fData = await fRes.json();
+        var spot = fData.rates[fx[1]];
+        if (spot && isFinite(spot) && spot > 0) {
+          var outF = [];
+          for (var j = 0; j < 80; j++) {
+            var n = (Math.random() - 0.5) * spot * 0.0006;
+            var p = spot + n;
+            outF.push({ open: p, close: p, high: p + Math.abs(n), low: p - Math.abs(n) });
+          }
+          return outF;
+        }
+      }
+    } catch (e0) {}
+  }
+
+  // Yahoo for commodities / stocks / crypto
+  var ySym = YAHOO_SYMBOL[symbol];
+  if (ySym) {
+    try {
+      var yUrl = "https://query1.finance.yahoo.com/v8/finance/chart/" + encodeURIComponent(ySym) + "?interval=30m&range=5d";
+      var yRes = await fetch(yUrl);
+      if (yRes.ok) {
+        var yData = await yRes.json();
+        var result = yData.chart.result[0];
+        var q = result.indicators.quote[0];
+        var rows = [];
+        for (var i = 0; i < q.close.length; i++) {
+          if (q.close[i] == null || q.open[i] == null) continue;
+          rows.push({ open: q.open[i], high: q.high[i], low: q.low[i], close: q.close[i] });
+        }
+        if (rows.length > 10) {
+          var lastC = rows[rows.length - 1].close;
+          // Accept live Yahoo if roughly in the same order of magnitude as anchor
+          if (ref > 0) {
+            if (lastC > ref * 0.35 && lastC < ref * 2.8) return rows;
+          } else if (lastC > 0) {
+            return rows;
+          }
+        }
+      }
+    } catch (e1) {}
+    // Fallback host / daily bars if 30m blocked
+    try {
+      var yUrl2 = "https://query2.finance.yahoo.com/v8/finance/chart/" + encodeURIComponent(ySym) + "?interval=1h&range=10d";
+      var yRes2 = await fetch(yUrl2);
+      if (yRes2.ok) {
+        var yData2 = await yRes2.json();
+        var result2 = yData2.chart.result[0];
+        var q2 = result2.indicators.quote[0];
+        var rows2 = [];
+        for (var i2 = 0; i2 < q2.close.length; i2++) {
+          if (q2.close[i2] == null || q2.open[i2] == null) continue;
+          rows2.push({ open: q2.open[i2], high: q2.high[i2], low: q2.low[i2], close: q2.close[i2] });
+        }
+        if (rows2.length > 5) {
+          var last2 = rows2[rows2.length - 1].close;
+          if (!ref || (last2 > ref * 0.35 && last2 < ref * 2.8)) return rows2;
+        }
+      }
+    } catch (e1b) {}
+  }
+
+  // Binance crypto
+  var bnSym = BINANCE_MAP[symbol];
+  if (bnSym) {
+    try {
+      var bnUrl = "https://api.binance.com/api/v3/klines?symbol=" + bnSym + "&interval=30m&limit=120";
+      var bnRes = await fetch(bnUrl);
+      if (bnRes.ok) {
+        var bnData = await bnRes.json();
+        if (bnData.length > 20) {
+          return bnData.map(function(k) {
+            return { open: parseFloat(k[1]), high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4]) };
+          });
+        }
+      }
+    } catch (e2) {}
+  }
+
+  // Safe synthetic around reference
+  var price = ref;
+  var out = [];
+  var vol = ref >= 50 ? ref * 0.001 : ref * 0.0008;
+  for (var k = 0; k < 80; k++) {
+    var noise = (Math.random() - 0.5) * vol;
+    price = price + noise;
+    if (price < ref * 0.99) price = ref * 0.99;
+    if (price > ref * 1.01) price = ref * 1.01;
+    out.push({ open: price, close: price, high: price + Math.abs(noise), low: price - Math.abs(noise) });
+  }
+  return out;
+}
+
+function sma(candles, period) {
+  var out = [];
+  for (var i = 0; i < candles.length; i++) {
+    if (i < period - 1) { out.push(null); continue; }
+    var sum = 0;
+    for (var j = i - period + 1; j <= i; j++) sum += candles[j].close;
+    out.push(sum / period);
+  }
+  return out;
+}
+
+var NEWS_BY_ASSET = {
+  XAUUSD: {
+    Bloomberg: ["Gold holds near session highs as investors dig into safe-haven demand", "Bullion tracks softer dollar after mixed US data", "Gold traders watch real yields for next directional cue", "Central-bank buying narrative stays supportive for gold"],
+    CNBC: ["Gold edges higher on defensive flows into precious metals", "Bullion consolidates after testing overnight resistance", "Safe-haven demand lifts gold as risk tone softens", "Gold market focuses on Fed path and dollar moves"],
+    Reuters: ["Gold steady as dollar eases from recent peaks", "Precious metals firm with gold leading the complex", "Gold prices supported by geopolitical uncertainty", "Bullion holds gains after softer-than-expected data"],
+    "CNN Business": ["Investors turn to gold amid market uncertainty", "Gold draws interest as a hedge against policy risk", "Bullion demand rises with defensive asset rotation", "Gold stays in focus as volatility returns"],
+    MarketWatch: ["Gold consolidates near key technical zone", "Bullion holds above support as dollar softens", "Gold traders map resistance for breakout confirmation", "Precious metals stay constructive on the day"],
+    "Yahoo Finance": ["Safe-haven flows support gold prices", "Gold remains firm as yields ease", "Bullion attracts tactical buyers near support", "Gold outlook tied to dollar and rate expectations"],
+    "Financial Times": ["Gold benefits from softer dollar and cautious risk appetite", "Bullion remains a preferred hedge in uncertain markets", "Gold demand stays resilient among institutional desks", "Precious metals complex sees selective strength led by gold"],
+    "Wall Street Journal": ["Gold attracts tactical buyers near support", "Bullion holds gains as markets digest data", "Gold stays sensitive to dollar and yield moves", "Investors keep gold on the hedge watchlist"],
+    "Investing.com": ["Gold technical structure favors holding above support", "Bullion momentum stays constructive near resistance test", "Gold range breakout remains under watch this session", "Key gold levels: hold support, probe resistance"],
+    FXStreet: ["Gold intraday bias constructive on higher lows", "Bullion range tightens ahead of high-impact data", "Gold liquidity improves into London/NY overlap", "XAUUSD reaction at support/resistance is the main focus"]
+  },
+  XAGUSD: {
+    Bloomberg: ["Silver outperforms as industrial demand narrative returns", "XAG tracks gold but amplifies moves on risk-on sessions", "Silver traders watch US industrial data and dollar tone", "Precious metals complex sees silver lead percentage gains"],
+    CNBC: ["Silver holds near session range after volatile overnight trade", "Industrial metals demand supports silver relative to gold", "XAG consolidates as traders map key support and resistance", "Silver draws tactical flows with gold still the primary hedge"],
+    Reuters: ["Silver prices firm with gold as dollar softens", "XAGUSD finds support after testing overnight lows", "Silver market balances investment and industrial demand", "Precious metals: silver follows bullion with higher beta"],
+    "Wall Street Journal": ["Silver attracts two-way interest near technical support", "XAG traders digest dollar and yield moves carefully", "Silver stays sensitive to growth data and risk appetite", "Industrial demand narrative keeps silver on the desk radar"],
+    MarketWatch: ["Silver technical structure centers on support hold", "XAG momentum mixed inside the session range", "Silver resistance test remains the near-term focus", "Range strategy dominates silver desks into the US session"],
+    "Yahoo Finance": ["Silver outlook tied to gold, dollar, and industrial data", "XAG flows stay tactical around support zones", "Analysts keep near-term silver targets under review", "Silver futures point to cautious session tone"],
+    "Financial Times": ["Silver benefits when growth hopes mix with hedge demand", "XAG remains a high-beta cousin of gold on macro days", "Silver demand stays resilient among tactical desks", "Precious metals complex sees selective strength in silver"],
+    "CNN Business": ["Silver draws interest as both hedge and industrial metal", "XAG volatility stays higher than gold on the same news", "Silver stays in focus when risk and growth narratives collide", "Investors watch silver for confirmation of metals tone"],
+    "Investing.com": ["Silver structure favors reaction at mapped support", "XAG range trade dominates until a clear break prints", "Silver resistance remains the test for bulls", "Key levels on silver remain the session playbook"]
+  },
+  BTCUSD: {
+    Bloomberg: ["Bitcoin holds range as liquidity and ETF flows set the tone", "Crypto desks watch dollar and risk appetite for BTC direction", "BTC consolidates after overnight volatility spike", "Bitcoin traders map support after mixed macro data"],
+    CNBC: ["Bitcoin steady as crypto complex tracks broader risk tone", "BTC consolidates near key technical zone into the US session", "Crypto flows selective with bitcoin still the benchmark", "Bitcoin reacts to liquidity conditions and dollar moves"],
+    Reuters: ["Bitcoin stabilizes after recent swings in digital assets", "BTC holds technical zone as traders await fresh catalysts", "Crypto market sees two-way flows led by bitcoin", "Bitcoin range remains defined by prior session highs and lows"],
+    "Wall Street Journal": ["Bitcoin attracts tactical interest near support", "BTC markets digest macro data and liquidity headlines", "Crypto desks stay focused on bitcoin dominance and flows", "Bitcoin resistance remains the near-term test"]
+  },
+  AAPL: {
+    Bloomberg: ["Apple shares track broader tech as traders weigh product cycle", "AAPL consolidates after overnight moves in megacap tech", "Apple stays sensitive to rates and growth expectations", "Tech desks map Apple support after sector rotation"],
+    CNBC: ["Apple holds range with Nasdaq as risk tone stabilizes", "AAPL traders focus on levels into the US cash session", "Megacap tech including Apple sees selective two-way flow", "Apple price action stays tied to broader equity beta"],
+    Reuters: ["Apple shares steady as markets digest tech leadership narrative", "AAPL consolidates near technical zone after recent swings", "US equity desks watch Apple for confirmation of risk appetite", "Apple remains a benchmark name in megacap tech flows"],
+    "Wall Street Journal": ["Apple attracts two-way interest near mapped support", "AAPL markets digest sector and macro headlines carefully", "Tech traders keep Apple on the levels watchlist", "Apple resistance remains a near-term focus for bulls"]
+  },
+  EURUSD: {
+    Bloomberg: ["Euro holds range as traders weigh ECB and Fed path divergence", "EURUSD reacts to dollar tone and euro-area data", "Euro consolidates after overnight moves in G10 FX", "EURUSD desks map support after mixed macro prints"],
+    CNBC: ["Euro steady against the dollar into the London/NY overlap", "EURUSD traders focus on yields and data calendar", "G10 FX: euro tracks dollar softness with selective flows", "EURUSD range trade dominates until a clear break"],
+    Reuters: ["Euro stabilizes as dollar eases from recent peaks", "EURUSD holds technical zone after data-driven swings", "Euro-dollar sees two-way flows ahead of key releases", "EURUSD remains sensitive to rate differential narrative"],
+    "Wall Street Journal": ["Euro attracts tactical interest near support versus the dollar", "EURUSD markets digest yields and policy expectations", "G10 desks keep euro-dollar levels in focus", "EURUSD resistance remains the near-term test"]
+  },
+  GBPUSD: {
+    Bloomberg: ["Sterling holds range as UK data and dollar tone set the path", "GBPUSD reacts to yields and risk sentiment", "Cable consolidates after overnight volatility", "GBPUSD traders watch support into the US session"],
+    CNBC: ["Pound steady against the dollar on selective G10 flows", "GBPUSD focuses on UK narrative and dollar strength", "Cable range remains the dominant strategy for desks", "GBPUSD maps key levels after mixed data"],
+    Reuters: ["Sterling stabilizes as dollar softens from peaks", "GBPUSD holds technical zone after recent swings", "Cable sees two-way interest near support", "GBPUSD sensitive to BoE and Fed path expectations"],
+    "Wall Street Journal": ["Pound attracts tactical flows near mapped support", "GBPUSD digests data and yield differentials carefully", "Cable resistance remains a focus for sterling bulls", "GBPUSD stays on the G10 levels watchlist"]
+  },
+  WTIUSD: {
+    Bloomberg: ["Oil holds range as traders weigh OPEC+ guidance", "Crude reacts to inventory data and supply headlines", "Energy complex stabilizes after overnight swings", "WTI watches demand signals from major economies"],
+    CNBC: ["Oil prices steady after volatile overnight session", "Crude traders focus on inventory and OPEC narrative", "Energy shares track WTI moves into the US session", "Oil market balances supply risk against demand soft patches"],
+    Reuters: ["Oil prices stabilize as supply concerns ease", "Crude holds technical zone after inventory print", "WTI consolidates as traders await fresh catalysts", "Energy complex sees selective two-way flows"],
+    "CNN Business": ["Oil market digests supply and demand headlines", "Crude stays sensitive to geopolitical risk premium", "Energy complex mixed as WTI holds range", "Oil traders map key support after recent swings"],
+    MarketWatch: ["WTI holds above key technical zone on inventory data", "Crude consolidates as volatility cools", "Oil resistance remains the near-term test", "Energy desks watch range breakout conditions"],
+    "Yahoo Finance": ["Analysts keep near-term oil targets under review", "Crude flows stay tactical around support", "WTI outlook tied to OPEC and demand data", "Oil futures point to cautious session tone"],
+    "Financial Times": ["Oil traders monitor geopolitical and OPEC headlines", "Crude market balances surplus risk with disruption premium", "Energy complex remains headline driven", "WTI stays in a defined trading range"],
+    "Wall Street Journal": ["Oil inventories surprise consensus estimates", "Crude markets digest supply data carefully", "WTI attracts two-way interest near support", "Energy traders stay focused on weekly stocks"],
+    "Investing.com": ["WTI technical structure centers on support hold", "Crude momentum mixed inside the session range", "Oil resistance test remains active", "Range strategy dominates WTI desks"],
+    FXStreet: ["WTI intraday bias neutral inside range", "Crude ranges tighten ahead of data", "Oil liquidity improves into NY session", "Key focus: WTI reaction at support and resistance"]
+  },
+  DEFAULT: {
+    Bloomberg: ["Markets reassess policy path after mixed data", "Dollar moves drive cross-asset adjustments", "Risk tone stays selective into the session", "Traders watch yields for directional cues"],
+    CNBC: ["Session tone cautious ahead of key releases", "Asset prices track dollar and yield moves", "Traders focus on levels and catalysts", "Risk appetite remains data dependent"],
+    Reuters: ["Global markets open mixed after Asia session", "Currency and commodity desks stay active", "Policy divergence remains a market theme", "Price action respects nearby technical levels"],
+    "CNN Business": ["Investors stay selective amid uncertainty", "Defensive and cyclical assets diverge", "Market focus returns to data calendar", "Volatility remains contained for now"],
+    MarketWatch: ["Technical levels guide short-term positioning", "Session ranges define the day so far", "Momentum signals stay mixed", "Key support and resistance under watch"],
+    "Yahoo Finance": ["Analysts emphasize level-based setups", "Flows stay tactical around support zones", "Outlook tied to data and dollar path", "Near-term bias depends on range break"],
+    "Financial Times": ["Policy makers keep data-dependent stance", "Markets monitor macro headlines closely", "Institutional flows favor quality exposure", "Cross-asset correlations remain elevated"],
+    "Wall Street Journal": ["Markets digest latest data prints carefully", "Traders stay focused on key technical zones", "Risk assets see selective participation", "Level reaction remains the main story"],
+    "Investing.com": ["Technical structure favors defined levels", "Momentum indicators remain mixed", "Resistance tests define the session", "Range breakout watchlist stays active"],
+    FXStreet: ["Intraday bias shaped by higher lows / lower highs", "Ranges tighten ahead of high-impact data", "Liquidity improves into major session overlap", "Reaction at support and resistance is key"]
+  }
+};
+
+function newsAssetKey(symbol) {
+  var s = (symbol || "").toUpperCase();
+  if (s.indexOf("XAU") >= 0 || s === "GOLD") return "XAUUSD";
+  if (s.indexOf("XAG") >= 0 || s === "SILVER") return "XAGUSD";
+  if (s.indexOf("WTI") >= 0 || s.indexOf("OIL") >= 0 || s.indexOf("BRENT") >= 0 || s === "USOIL") return "WTIUSD";
+  if (s.indexOf("BTC") >= 0 || s === "BITCOIN") return "BTCUSD";
+  if (s === "AAPL" || s === "APPLE") return "AAPL";
+  if (s.indexOf("EUR") >= 0 && s.indexOf("USD") >= 0) return "EURUSD";
+  if (s.indexOf("GBP") >= 0 && s.indexOf("USD") >= 0) return "GBPUSD";
+  if (s === "USDJPY" || s === "GBPJPY" || s === "EURJPY") return s;
+  return NEWS_BY_ASSET[s] ? s : "DEFAULT";
+}
+
+function pickNewsLine(source, seed, symbol) {
+  var key = newsAssetKey(symbol);
+  var pack = NEWS_BY_ASSET[key] || NEWS_BY_ASSET.DEFAULT;
+  var bank = pack[source] || pack.Bloomberg || NEWS_BY_ASSET.DEFAULT.Bloomberg;
+  return bank[Math.abs(seed) % bank.length];
+}
+
+function buildAnalysis(symbol, trend, support, resistance, price) {
+  var name = (typeof DISPLAY !== "undefined" && DISPLAY[symbol]) ? DISPLAY[symbol] : symbol;
+  var dir = trend.indexOf("Bull") >= 0 ? "bullish" : trend.indexOf("Bear") >= 0 ? "bearish" : "neutral / range-bound";
+  return (
+    name + " is trading near " + price + " with a " + dir + " bias. " +
+    "Support at " + support + " is the floor where buyers previously defended price — a hold keeps the structure intact; a clean break increases downside risk. " +
+    "Resistance at " + resistance + " is the ceiling where sellers previously appeared — a break and hold above opens room for continuation. " +
+    "Between these two levels the market is in a defined range. Watch how price reacts on the next touch of support or resistance for confirmation."
+  );
+}
+
+function buildSummary(symbol, trend, support, resistance) {
+  var name = (typeof DISPLAY !== "undefined" && DISPLAY[symbol]) ? DISPLAY[symbol] : symbol;
+  return (
+    name + " report: Trend " + trend + ". " +
+    "Primary support " + support + " (demand zone / memory of prior bounces). " +
+    "Primary resistance " + resistance + " (supply zone / memory of prior rejects). " +
+    "Plan: respect the range until a clear break and hold beyond either level. Informational only — not financial advice."
+  );
+}
+
+async function generateServerReport(material, profile, reportNumber) {
+  var symbol = normalizeSymbol(material);
+  var candles = await fetchCandles(symbol, "30");
+  var last = candles[candles.length - 1];
+  var closes = candles.map(function(c) { return c.close; });
+  var recent = closes.slice(-20);
+  var avg = recent.reduce(function(a, b) { return a + b; }, 0) / recent.length;
+  var priceNum = last ? last.close : avg;
+  var high20 = Math.max.apply(null, candles.slice(-20).map(function(c) { return c.high; }));
+  var low20 = Math.min.apply(null, candles.slice(-20).map(function(c) { return c.low; }));
+  // Clamp to realistic band
+  var refP = REF_PRICE[symbol] || 0;
+  var isFx = symbol === "GBPUSD" || symbol === "EURUSD" || symbol === "USDJPY" || symbol === "GBPJPY" || symbol === "EURJPY";
+  var isMetal = symbol === "XAUUSD" || symbol === "GOLD" || symbol === "XAGUSD" || symbol === "SILVER";
+  var isOil = symbol === "WTIUSD" || symbol === "WTI" || symbol === "USOIL";
+  // Only fall back to REF when live price is missing or absurd vs anchor
+  var loMul = isFx ? 0.90 : (isMetal ? 0.70 : (isOil ? 0.60 : 0.40));
+  var hiMul = isFx ? 1.10 : (isMetal ? 1.40 : (isOil ? 1.50 : 2.50));
+  var liveOk = isFinite(priceNum) && priceNum > 0 && !(refP > 0 && (priceNum < refP * loMul || priceNum > refP * hiMul));
+  if (!liveOk) {
+    priceNum = refP > 0 ? refP : priceNum;
+    high20 = priceNum * 1.006;
+    low20 = priceNum * 0.994;
+  } else {
+    // Keep live highs/lows but avoid insane spikes vs last price
+    if (!isFinite(high20) || high20 > priceNum * 1.08) high20 = priceNum * 1.004;
+    if (!isFinite(low20) || low20 < priceNum * 0.92) low20 = priceNum * 0.996;
+    if (low20 >= priceNum) low20 = priceNum * 0.997;
+    if (high20 <= priceNum) high20 = priceNum * 1.003;
+  }
+  var decimals = priceNum > 50 ? 2 : 4;
+  var support = (low20 * 0.998).toFixed(decimals);
+  var resistance = (high20 * 1.002).toFixed(decimals);
+  var ma50 = sma(candles, 50);
+  var lastMa = ma50[ma50.length - 1];
+  var trend = "Neutral ◆";
+  if (lastMa != null) {
+    if (priceNum > lastMa * 1.002) trend = "Bullish ▲";
+    else if (priceNum < lastMa * 0.998) trend = "Bearish ▼";
+  } else {
+    var slope = recent[recent.length - 1] - recent[0];
+    if (slope > 0) trend = "Bullish ▲";
+    else if (slope < 0) trend = "Bearish ▼";
+  }
+  var seed = Date.now() + symbol.charCodeAt(0);
+  var news = {};
+  NEWS_SOURCES.forEach(function(src, i) {
+    news["news" + (i + 1)] = pickNewsLine(src, seed + i * 17, symbol);
+  });
+  var priceStr = pricePrefix(symbol) + Number(priceNum).toFixed(decimals);
+  var analysis = buildAnalysis(symbol, trend, support, resistance, priceStr);
+  var summary = buildSummary(symbol, trend, support, resistance);
+  var now = Date.now();
+  var stamp = formatReportStamp(now);
+  return Object.assign({
+    id: "rpt_" + now + "_" + symbol,
+    createdAt: now,
+    expiry: now + THIRTY_DAYS,
+    material: symbol,
+    displayName: DISPLAY[symbol] || symbol,
+    dateLabel: stamp.date,
+    timeLabel: stamp.time,
+    stampFull: stamp.full,
+    username: (profile && profile.name) ? profile.name : "Prime User",
+    user_email: (profile && profile.email) ? profile.email : "user@goldpro.com",
+    report_count: reportNumber,
+    price: priceStr,
+    priceNum: priceNum,
+    trend: trend,
+    support: support,
+    resistance: resistance,
+    analysis: analysis,
+    summary: summary
+  }, news);
+}
+
+function reportToShareText(r) {
+  var lines = [
+    "📡 Material Report — Gold Pro Prime",
+    "",
+    "👤 User: " + r.username,
+    "📧 Email: " + r.user_email,
+    "📊 Report #" + r.report_count,
+    "",
+    "💰 " + r.material + ": " + r.price,
+    "📈 Trend: " + r.trend,
+    "🧱 Support: " + r.support + " | Resistance: " + r.resistance,
+    "",
+    "📰 Top News:"
+  ];
+  NEWS_SOURCES.forEach(function(src, i) {
+    lines.push("• " + src + ": " + r["news" + (i + 1)]);
+  });
+  lines.push("", "⚡ Analysis:", r.analysis, "", "🎯 Summary:", r.summary, "", "⭐ Powered by Gold Pro AI Engine");
+  return lines.join("\n");
+}
+
+function normalizeIncomingReport(raw, profile, fallbackCount) {
+  var now = Date.now();
+  var material = normalizeSymbol(raw.material || raw.symbol || raw.pair || "XAUUSD");
+  var stamp = formatReportStamp(raw.createdAt || raw.timestamp || now);
+  var news = {};
+  for (var i = 1; i <= 10; i++) {
+    news["news" + i] = raw["news" + i] || (raw.news && raw.news[i - 1]) || raw["headline" + i] || "";
+  }
+  return Object.assign({
+    id: raw.id || ("ws_" + now + "_" + material),
+    createdAt: raw.createdAt || now,
+    expiry: raw.expiry || (now + THIRTY_DAYS),
+    material: material,
+    displayName: DISPLAY[material] || material,
+    dateLabel: stamp.date,
+    timeLabel: stamp.time,
+    stampFull: stamp.full,
+    username: raw.username || (profile && profile.name) || "Prime User",
+    user_email: raw.user_email || raw.email || (profile && profile.email) || "user@goldpro.com",
+    report_count: raw.report_count || raw.reportNumber || fallbackCount || 1,
+    price: raw.price || "--",
+    trend: raw.trend || "Neutral ◆",
+    support: raw.support || "--",
+    resistance: raw.resistance || "--",
+    analysis: raw.analysis || "",
+    summary: raw.summary || "",
+    headline: raw.headline || "",
+    bias: raw.bias || "",
+    key_levels: raw.key_levels || "",
+    session_note: raw.session_note || "",
+    risk_note: raw.risk_note || "",
+    source: raw.source || "live",
+    type: raw.type || "",
+    stars: raw.stars || 0,
+    star_label: raw.star_label || (raw.stars === 3 ? "★★★" : (raw.stars === 1 ? "★" : "")),
+    timeframe: raw.timeframe || "",
+    structure: raw.structure || "",
+    modules: raw.modules || [],
+    educational: !!raw.educational,
+    push: !!raw.push,
+    toast: !!raw.toast,
+    disclaimer: raw.disclaimer || ""
+  }, news);
+}
+
+function buildFourHourStory(r) {
+  var name = r.displayName || r.material || "Market";
+  var price = r.price || "—";
+  var support = r.support || "—";
+  var resistance = r.resistance || "—";
+  var trend = String(r.trend || "Neutral");
+  var bull = trend.indexOf("Bull") >= 0;
+  var bear = trend.indexOf("Bear") >= 0;
+  var stamp = r.stampFull || "this session";
+  var opening = bull
+    ? ("At " + stamp + ", " + name + " was trading near " + price + ". The four-hour window told a story of recovery: every time price slipped, buyers stepped back in before support at " + support + " could fully break.")
+    : bear
+    ? ("At " + stamp + ", " + name + " sat near " + price + ". The four-hour chapter leaned heavy: rallies faded under pressure, and sellers kept defending the path back toward resistance at " + resistance + ".")
+    : ("At " + stamp + ", " + name + " held near " + price + ". For four hours the market refused to choose a side — a quiet standoff between support at " + support + " and resistance at " + resistance + ".");
+  var levels = "Think of the chart as a map of memory. Support at " + support + " is where the market previously remembered demand — buyers defended that floor. Resistance at " + resistance + " is where the market remembered supply — sellers appeared at the ceiling. Price at " + price + " is simply the character walking between those two walls.";
+  var middle = bull
+    ? ("Inside the range, dips looked like pauses rather than panic. The higher-probability path stayed upward while support held, but the story stays unfinished until " + resistance + " is broken and held.")
+    : bear
+    ? ("Inside the range, bounces looked temporary. Pressure near " + support + " grew, yet the decisive break had not fully printed. Until support fails or resistance is reclaimed, this remains a bearish-leaning range story.")
+    : ("Inside the range, neither side won. Liquidity rested, ranges tightened, and traders waited for a clear break. This is the quiet chapter before a louder move.");
+  var memory = "When price returns to " + support + " or " + resistance + ", it is not visiting random numbers — it is revisiting levels the market already reacted to before. That memory is why bounces, rejects, and false breaks keep repeating at the same zones.";
+  var ending = bull
+    ? ("This four-hour story closes with a constructive tone near " + price + ". The next page is simple: hold above support, watch " + resistance + ". Informational only — not financial advice.")
+    : bear
+    ? ("This four-hour story closes with pressure still present near " + price + ". The next page is simple: defend or lose " + support + ", and respect " + resistance + " on any bounce. Informational only — not financial advice.")
+    : ("This four-hour story closes in balance near " + price + ". The next page will be written by a break of " + support + " or " + resistance + ". Informational only — not financial advice.");
+  return { title: "The 4-Hour Story of " + name, opening: opening, levels: levels, middle: middle, memory: memory, ending: ending };
+}
+
+
+function playPatternBell() {
+  try {
+    if (!window.__gpBell) {
+      window.__gpBell = new Audio("data:audio/mpeg;base64,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");
+      window.__gpBell.preload = "auto";
+      window.__gpBell.volume = 0.85;
+    }
+    var a = window.__gpBell;
+    a.pause();
+    a.currentTime = 0;
+    var p = a.play();
+    if (p && p.catch) p.catch(function(){});
+  } catch (e) {}
+}
+
+function App() {
+  var _s = useState("home"), tab = _s[0], setTab = _s[1];
+  var _w = useState(["XAUUSD", "WTIUSD", "AAPL", "GBPUSD", "EURJPY"]), watchlist = _w[0], setWatchlist = _w[1];
+  var _a = useState("XAUUSD"), active = _a[0], setActive = _a[1];
+  var _t = useState("30"), tf = _t[0], setTf = _t[1];
+  var _ai = useState(""), addInput = _ai[0], setAddInput = _ai[1];
+  var _tk = useState(0), tick = _tk[0], setTick = _tk[1];
+  var _n = useState(FALLBACK_NEWS), news = _n[0], setNews = _n[1];
+  var _p = useState({ name: "", mobile: "", email: "" }), profile = _p[0], setProfile = _p[1];
+  var _c = useState(function() { return detectCurrency(); }), currency = _c[0], setCurrency = _c[1];
+  var _to = useState(null), toast = _to[0], setToast = _to[1];
+  var _ath = useState("dark"), appTheme = _ath[0], setAppTheme = _ath[1];
+  var _lp = useState(null), livePrice = _lp[0], setLivePrice = _lp[1];
+  var _lch = useState(null), liveChange = _lch[0], setLiveChange = _lch[1];
+  var _leg = useState(function() {
+    try { return localStorage.getItem("gp_legal_ok") === "1"; } catch (e) { return false; }
+  }), legalAccepted = _leg[0], setLegalAccepted = _leg[1];
+  var _lv = useState(null), legalView = _lv[0], setLegalView = _lv[1]; // "terms" | "privacy" | null
+
+  var toastRef = useRef(null);
+  var _b = useState("monthly"), billing = _b[0], setBilling = _b[1];
+  var _o = useState(true), online = _o[0], setOnline = _o[1];
+  var _m = useState(null), modal = _m[0], setModal = _m[1];
+  var _ib = useState([]), inbox = _ib[0], setInbox = _ib[1];
+  var _or = useState(null), openReportId = _or[0], setOpenReportId = _or[1];
+  var _rm = useState("1h"), reportMode = _rm[0], setReportMode = _rm[1];
+  var _rt = useState("light"), reportTheme = _rt[0], setReportTheme = _rt[1];
+  var _rg = useState(false), reportGenerating = _rg[0], setReportGenerating = _rg[1];
+  var _ws = useState("offline"), wsStatus = _ws[0], setWsStatus = _ws[1];
+  var _nf = useState(function() {
+    try { return localStorage.getItem("gp_notif") !== "0"; } catch (e) { return true; }
+  }), notifEnabled = _nf[0], setNotifEnabled = _nf[1];
+  var _fav = useState(function() { return loadFavorites(); }), favorites = _fav[0], setFavorites = _fav[1];
+  function saveFavorites(list) {
+    var next = (list || []).slice(0, 12);
+    setFavorites(next);
+    try { localStorage.setItem("gp_favorites", JSON.stringify(next)); } catch (e) {}
+  }
+  function removeFavorite(sym) {
+    var s = normalizeSymbol(sym);
+    var next = favorites.filter(function(x) { return x !== s; });
+    saveFavorites(next);
+    showToast("Removed " + s + " from favorites");
+  }
+  function addFavorite(sym) {
+    var s = normalizeSymbol(sym);
+    if (!s) return;
+    if (favorites.indexOf(s) >= 0) { showToast(s + " already in favorites"); return; }
+    if (favorites.length >= 12) { showToast("Max 12 favorites"); return; }
+    saveFavorites(favorites.concat([s]));
+    showToast("Added " + s + " to favorites");
+  }
+  function resetFavorites() {
+    saveFavorites(DEFAULT_FAVORITES.slice());
+    showToast("Favorites reset");
+  }
+  var wsUrl = WS_URL;
+  var _rs = useState(""), reportSearch = _rs[0], setReportSearch = _rs[1];
+  var _ms = useState(""), materialQuery = _ms[0], setMaterialQuery = _ms[1];
+  var _mbox = useState(false), mailboxOpen = _mbox[0], setMailboxOpen = _mbox[1];
+  var lastGenRef = useRef(0);
+  var totalReceivedRef = useRef(0);
+  var wsRef = useRef(null);
+  var wsRetryRef = useRef(null);
+  var inboxRef = useRef([]);
+
+  var nowMin = useMemo(function() { return utcMinutes() + tick * 0; }, [tick]);
+  var openReport = useMemo(function() {
+    return openReportId ? (inbox.find(function(r) { return r.id === openReportId; }) || null) : null;
+  }, [openReportId, inbox]);
+
+  var filteredInbox = useMemo(function() {
+    var q = (reportSearch || "").trim().toUpperCase().replace(/[\/\s_]/g, "");
+    if (!q) return inbox;
+    return inbox.filter(function(r) {
+      var mat = (r.material || "").toUpperCase();
+      var disp = (r.displayName || "").toUpperCase().replace(/[\/\s]/g, "");
+      var trend = (r.trend || "").toUpperCase();
+      var price = (r.price || "").toUpperCase();
+      return mat.indexOf(q) >= 0 || disp.indexOf(q) >= 0 || trend.indexOf(q) >= 0 || price.indexOf(q) >= 0
+        || String(r.report_count || "").indexOf(q) >= 0
+        || (r.dateLabel || "").toUpperCase().indexOf(q) >= 0
+        || (r.timeLabel || "").toUpperCase().indexOf(q) >= 0;
+    });
+  }, [inbox, reportSearch]);
+
+  useEffect(function() {
+    try { setOnline(typeof navigator !== "undefined" ? navigator.onLine : true); } catch (e) {}
+    var on = function() { setOnline(true); };
+    var off = function() { setOnline(false); };
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return function() { window.removeEventListener("online", on); window.removeEventListener("offline", off); };
+  }, []);
+
+      useEffect(function() {
+    setTf("30");
+    if (!watchlist || !watchlist.length) {
+      setWatchlist(["XAUUSD"]);
+      setActive("XAUUSD");
+    }
+  }, []);
+
+useEffect(function() {
+    document.body.style.background = appTheme === "dark" ? "#000" : "#f2f3f5";
+    document.body.style.color = appTheme === "dark" ? "#fff" : "#111";
+  }, [appTheme]);
+
+  useEffect(function() {
+    var cancelled = false;
+    async function loadPrice() {
+      try {
+        var candles = await fetchCandles(active, "30");
+        if (cancelled || !candles || !candles.length) return;
+        var last = candles[candles.length - 1].close;
+        var prev = candles.length > 1 ? candles[candles.length - 2].close : last;
+        var ch = prev ? ((last - prev) / prev) * 100 : 0;
+        setLivePrice(last);
+        setLiveChange(ch);
+      } catch (e) {
+        var ref = REF_PRICE[active];
+        if (ref && !cancelled) { setLivePrice(ref); setLiveChange(0); }
+      }
+    }
+    loadPrice();
+    var t = setInterval(loadPrice, 30000);
+    return function() { cancelled = true; clearInterval(t); };
+  }, [active]);
+
+useEffect(function() {
+    try {
+      var a = localStorage.getItem("gp_active"); if (a) setActive(a);
+      var w = localStorage.getItem("gp_watchlist");
+      if (w) { var arr = JSON.parse(w); if (Array.isArray(arr) && arr.length) setWatchlist(arr); }
+      var t = localStorage.getItem("gp_tf"); if (t) setTf(t);
+      var p = localStorage.getItem("gp_profile"); if (p) setProfile(JSON.parse(p));
+      var ib = localStorage.getItem("gp_material_inbox");
+      if (ib) {
+        var list = JSON.parse(ib);
+        var now = Date.now();
+        var keep = (Array.isArray(list) ? list : []).filter(function(x) { return x && x.expiry > now; }).sort(function(a, b) { return b.createdAt - a.createdAt; });
+        setInbox(keep);
+        totalReceivedRef.current = keep.length ? Math.max.apply(null, keep.map(function(x) { return x.report_count || 0; })) : 0;
+        if (keep.length !== (list || []).length) localStorage.setItem("gp_material_inbox", JSON.stringify(keep));
+      }
+      var lg = localStorage.getItem("gp_last_report_gen");
+      if (lg) lastGenRef.current = parseInt(lg, 10) || 0;
+    } catch (e) {}
+    setCurrency(detectCurrency());
+    setTab("home");
+  }, []);
+
+  useEffect(function() { try { localStorage.setItem("gp_active", active); } catch (e) {} }, [active]);
+  useEffect(function() { try { localStorage.setItem("gp_watchlist", JSON.stringify(watchlist)); } catch (e) {} }, [watchlist]);
+  useEffect(function() { try { localStorage.setItem("gp_tf", tf); } catch (e) {} }, [tf]);
+  useEffect(function() { try { localStorage.setItem("gp_profile", JSON.stringify(profile)); } catch (e) {} }, [profile]);
+
+  var persistInbox = useCallback(function(list) {
+    var cleaned = list.filter(function(x) { return x.expiry > Date.now(); }).sort(function(a, b) { return b.createdAt - a.createdAt; });
+    inboxRef.current = cleaned;
+    setInbox(cleaned);
+    try { localStorage.setItem("gp_material_inbox", JSON.stringify(cleaned)); } catch (e) {}
+    return cleaned;
+  }, []);
+
+  useEffect(function() { inboxRef.current = inbox; }, [inbox]);
+
+  var profileRef = useRef(profile);
+  useEffect(function() { profileRef.current = profile; }, [profile]);
+
+  /* Sync inbox from REST API (nginx /api → backend store) */
+  var fetchInboxFromApi = useCallback(async function() {
+    try {
+      var res = await fetch(API_BASE + "/inbox?limit=80", {
+        method: "GET",
+        headers: { "Accept": "application/json" }
+      });
+      if (!res.ok) return;
+      var data = await res.json();
+      if (!data || !Array.isArray(data.items) || !data.items.length) return;
+      var profile = profileRef.current;
+      var incoming = data.items.map(function(raw, i) {
+        return normalizeIncomingReport(raw, profile, raw.report_count || (i + 1));
+      });
+      var byId = {};
+      incoming.forEach(function(r) { byId[r.id] = r; });
+      (inboxRef.current || []).forEach(function(r) { if (!byId[r.id]) byId[r.id] = r; });
+      var merged = Object.keys(byId).map(function(k) { return byId[k]; })
+        .filter(function(r) { return !r.expiry || r.expiry > Date.now(); })
+        .sort(function(a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+      persistInbox(merged);
+      if (merged.length) {
+        totalReceivedRef.current = Math.max.apply(null, merged.map(function(x) { return x.report_count || 0; }).concat([totalReceivedRef.current || 0]));
+      }
+    } catch (e) {
+      console.warn("inbox api sync failed", e);
+    }
+  }, [persistInbox]);
+
+  useEffect(function() {
+    fetchInboxFromApi();
+    var id = setInterval(fetchInboxFromApi, 5 * 60 * 1000);
+    return function() { clearInterval(id); };
+  }, [fetchInboxFromApi]);
+
+  var ingestLiveReport = useCallback(function(payload) {
+    try {
+      var data = typeof payload === "string" ? JSON.parse(payload) : payload;
+      /* Server inbox snapshot on WS connect */
+      if (data && data.type === "inbox_snapshot" && Array.isArray(data.items)) {
+        var profile = profileRef.current;
+        var mapped = data.items.map(function(raw, i) {
+          return normalizeIncomingReport(raw, profile, raw.report_count || (i + 1));
+        });
+        var byId = {};
+        mapped.forEach(function(r) { byId[r.id] = r; });
+        (inboxRef.current || []).forEach(function(r) { if (!byId[r.id]) byId[r.id] = r; });
+        var merged = Object.keys(byId).map(function(k) { return byId[k]; })
+          .filter(function(r) { return !r.expiry || r.expiry > Date.now(); })
+          .sort(function(a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+        persistInbox(merged);
+        if (merged.length) {
+          totalReceivedRef.current = Math.max.apply(null, merged.map(function(x) { return x.report_count || 0; }).concat([totalReceivedRef.current || 0]));
+        }
+        return;
+      }
+      if (data && data.type === "subscribed") return;
+      if (data && data.type === "pong") return;
+      if (!data || (data.type && data.type !== "material_report" && data.type !== "report" && data.type !== "prime_pattern")) {
+        if (!(data && (data.material || data.symbol || data.price || data.stars))) return;
+      }
+      var body = data.report || data.data || data;
+      var nextNum = (body.report_count || totalReceivedRef.current + 1);
+      var report = normalizeIncomingReport(body, profileRef.current, nextNum);
+      totalReceivedRef.current = Math.max(totalReceivedRef.current, report.report_count || nextNum);
+      lastGenRef.current = Date.now();
+      try { localStorage.setItem("gp_last_report_gen", String(lastGenRef.current)); } catch (e) {}
+      var exists = inboxRef.current.some(function(x) { return x.id === report.id; });
+      if (exists) return;
+      persistInbox([report].concat(inboxRef.current));
+      var isPattern = report.type === "prime_pattern" || report.source === "pattern_engine" || (report.stars > 0);
+      // Patterns: always toast + push (when alerts enabled). Regular reports: quiet unless notif on (no push spam).
+      if (isPattern) {
+        var star = report.star_label || (report.stars === 3 ? "★★★" : "★");
+        var toastMsg = star + " Pattern • " + report.material + (report.timeframe ? (" " + report.timeframe) : "");
+        setToast(toastMsg);
+        if (toastRef.current) window.clearTimeout(toastRef.current);
+        toastRef.current = window.setTimeout(function() { setToast(null); }, 4000);
+        try { playPatternBell(); } catch (e) {}
+        if (notifEnabled) {
+          try {
+            if (typeof Notification !== "undefined") {
+              if (Notification.permission === "default") Notification.requestPermission();
+              if (Notification.permission === "granted") {
+                new Notification("Prime Pattern " + star + " — " + (report.material || ""), {
+                  body: (report.structure || report.trend || "Pattern structure complete") + "\n— Educational pattern recognition only. Not financial advice.",
+                  silent: true
+                });
+              }
+            }
+          } catch (e) {}
+        }
+      } else if (notifEnabled) {
+        // Regular reports: visual toast only — NO sound
+        setToast("Live report • " + report.material);
+        if (toastRef.current) window.clearTimeout(toastRef.current);
+        toastRef.current = window.setTimeout(function() { setToast(null); }, 2600);
+      }
+    } catch (e) {
+      console.warn("WS report parse error", e);
+    }
+  }, [persistInbox, notifEnabled]);
+
+  /* WebSocket live connection */
+  useEffect(function() {
+    var closed = false;
+    function connect() {
+      if (closed) return;
+      try {
+        if (wsRef.current) {
+          try { wsRef.current.close(); } catch (e) {}
+        }
+        setWsStatus("connecting");
+        var socket = new WebSocket(wsUrl);
+        wsRef.current = socket;
+        socket.onopen = function() {
+          setWsStatus("live");
+          try {
+            socket.send(JSON.stringify({
+              type: "subscribe",
+              channel: "material_reports",
+              user: (profileRef.current && profileRef.current.email) || "anonymous"
+            }));
+          } catch (e) {}
+        };
+        socket.onmessage = function(ev) {
+          ingestLiveReport(ev.data);
+        };
+        socket.onerror = function() {
+          setWsStatus("error");
+        };
+        socket.onclose = function() {
+          setWsStatus("offline");
+          if (closed) return;
+          if (wsRetryRef.current) clearTimeout(wsRetryRef.current);
+          wsRetryRef.current = setTimeout(connect, WS_RECONNECT_MS);
+        };
+      } catch (e) {
+        setWsStatus("offline");
+        if (!closed) {
+          if (wsRetryRef.current) clearTimeout(wsRetryRef.current);
+          wsRetryRef.current = setTimeout(connect, WS_RECONNECT_MS);
+        }
+      }
+    }
+    connect();
+    return function() {
+      closed = true;
+      if (wsRetryRef.current) clearTimeout(wsRetryRef.current);
+      if (wsRef.current) {
+        try { wsRef.current.close(); } catch (e) {}
+      }
+    };
+  }, [wsUrl, ingestLiveReport]);
+
+  useEffect(function() {
+    var id = setInterval(function() { setTick(function(n) { return n + 1; }); }, 30000);
+    return function() { clearInterval(id); };
+  }, []);
+
+  var loadNews = async function() {
+    try {
+      var h = new Date();
+      var day = h.getUTCDay();
+      var mon = new Date(Date.UTC(h.getUTCFullYear(), h.getUTCMonth(), h.getUTCDate() - (day + 6) % 7));
+      var sun = new Date(mon); sun.setUTCDate(mon.getUTCDate() + 6);
+      var fmt = function(d) { return d.toISOString().slice(0, 10); };
+      var url = "https://ultimate-economic-calendar.p.rapidapi.com/economic-events/tradingview?from=" + encodeURIComponent(fmt(mon)) + "&to=" + encodeURIComponent(fmt(sun)) + "&countries=" + encodeURIComponent("US, GB, DE, JP, AU, EU, CA, CN");
+      var res = await fetch(url, { method: "GET", headers: { "Content-Type": "application/json", "x-rapidapi-host": "ultimate-economic-calendar.p.rapidapi.com", "x-rapidapi-key": "1373534116msh1a2c5f6b66adafdp147b5djsnfc68f74212e9" } });
+      if (!res.ok) throw new Error("api fail");
+      var json = await res.json();
+      var list = [];
+      if (Array.isArray(json)) list = json;
+      else if (Array.isArray(json.result)) list = json.result;
+      else if (Array.isArray(json.data)) list = json.data;
+      else if (Array.isArray(json.events)) list = json.events;
+      else { var found = Object.values(json).find(function(v) { return Array.isArray(v); }); if (found) list = found; }
+      var high = list.filter(function(e) {
+        var imp = (e.importance || e.impact || e.volatility || e.priority || "").toString().toLowerCase();
+        return imp.indexOf("high") >= 0 || imp === "3" || imp === "red" || e.importance === 3 || e.impact === 3;
+      });
+      var mapped = (high.length ? high : list).slice(0, 25).map(function(e) {
+        var c = (e.country || e.currency || e.countryCode || e.region || "").toString().toUpperCase();
+        var code = c;
+        if (c.length > 3) {
+          if (c.indexOf("US") >= 0 || c.indexOf("USD") >= 0) code = "USD";
+          else if (c.indexOf("GB") >= 0 || c.indexOf("UK") >= 0 || c.indexOf("GBP") >= 0) code = "GBP";
+          else if (c.indexOf("EU") >= 0 || c.indexOf("EUR") >= 0 || c.indexOf("DE") >= 0 || c.indexOf("GER") >= 0) code = "EUR";
+          else if (c.indexOf("JP") >= 0 || c.indexOf("JPY") >= 0) code = "JPY";
+          else if (c.indexOf("AU") >= 0 || c.indexOf("AUD") >= 0) code = "AUD";
+          else if (c.indexOf("CA") >= 0 || c.indexOf("CAD") >= 0) code = "CAD";
+          else if (c.indexOf("CN") >= 0 || c.indexOf("CNY") >= 0) code = "CNY";
+          else code = c.slice(0, 3);
+        }
+        var dt = new Date(e.date || e.datetime || e.time || e.timestamp || e.event_time);
+        return {
+          time: isNaN(dt.getTime()) ? "--:--" : String(dt.getUTCHours()).padStart(2, "0") + ":" + String(dt.getUTCMinutes()).padStart(2, "0"),
+          flag: CURRENCY_FLAGS[code] || "🏳️",
+          title: (e.title || e.event || e.name || e.event_name || "Economic Event").toString().slice(0, 48),
+          impact: "HIGH"
+        };
+      });
+      if (mapped.length > 0) setNews(mapped);
+    } catch (e) {}
+  };
+
+  useEffect(function() {
+    loadNews();
+    var id = setInterval(loadNews, 1800000);
+    return function() { clearInterval(id); };
+  }, []);
+
+  function showToast(msg) {
+    setToast(msg);
+    if (toastRef.current) window.clearTimeout(toastRef.current);
+    toastRef.current = window.setTimeout(function() { setToast(null); }, 2600);
+  }
+
+  var pushNewReport = useCallback(async function(forceMaterial) {
+    if (reportGenerating) return;
+    setReportGenerating(true);
+    try {
+      var material = forceMaterial || active || MATERIALS[totalReceivedRef.current % MATERIALS.length];
+      var nextNum = totalReceivedRef.current + 1;
+      var report = await generateServerReport(material, profile, nextNum);
+      totalReceivedRef.current = nextNum;
+      lastGenRef.current = Date.now();
+      try { localStorage.setItem("gp_last_report_gen", String(lastGenRef.current)); } catch (e) {}
+      persistInbox([report].concat(inbox));
+      showToast("New report received • " + report.material);
+    } catch (e) {
+      showToast("Report generation failed");
+    } finally {
+      setReportGenerating(false);
+    }
+  }, [active, profile, inbox, persistInbox, reportGenerating]);
+
+  useEffect(function() {
+    /* Local fallback only when WebSocket is offline */
+    var tryGen = function() {
+      if (wsStatus === "live") return;
+      var now = Date.now();
+      if (!lastGenRef.current || now - lastGenRef.current >= THIRTY_MIN) pushNewReport();
+    };
+    var t0 = setTimeout(tryGen, 1200);
+    var id = setInterval(tryGen, 60000);
+    return function() { clearTimeout(t0); clearInterval(id); };
+  }, [pushNewReport, wsStatus]);
+
+  useEffect(function() {
+    if (inbox.length > 0) return;
+    var cancelled = false;
+    (async function() {
+      var seeds = [];
+      for (var i = 0; i < 3; i++) {
+        if (cancelled) return;
+        var mat = MATERIALS[i % MATERIALS.length];
+        var r = await generateServerReport(mat, profile, i + 1);
+        r.createdAt = Date.now() - (3 - i) * THIRTY_MIN - 60000;
+        r.expiry = r.createdAt + THIRTY_DAYS;
+        var st = formatReportStamp(r.createdAt);
+        r.dateLabel = st.date; r.timeLabel = st.time; r.stampFull = st.full;
+        r.id = "rpt_" + r.createdAt + "_" + mat;
+        seeds.push(r);
+      }
+      if (!cancelled) {
+        totalReceivedRef.current = 3;
+        lastGenRef.current = Date.now();
+        try { localStorage.setItem("gp_last_report_gen", String(lastGenRef.current)); } catch (e) {}
+        persistInbox(seeds.reverse());
+      }
+    })();
+    return function() { cancelled = true; };
+  }, []);
+
+  function selectSymbol(raw) {
+    var s = normalizeSymbol(raw);
+    setActive(s);
+    setWatchlist(function(prev) { return prev.indexOf(s) >= 0 ? prev : [s].concat(prev).slice(0, 12); });
+  }
+
+  function removeSymbol(s) {
+    setWatchlist(function(prev) {
+      var next = prev.filter(function(x) { return x !== s; });
+      if (!next.length) {
+        setActive("XAUUSD");
+        setTf("30");
+        showToast("Default: XAUUSD · 30m · MA50");
+        return ["XAUUSD"];
+      }
+      if (active === s) setActive(next[0]);
+      return next;
+    });
+    showToast(s + " removed");
+  }
+
+  function resetWatchlist() {
+    setWatchlist(["XAUUSD", "WTIUSD", "AAPL", "GBPUSD", "EURJPY"]);
+    setActive("XAUUSD");
+    showToast("Watchlist reset");
+  }
+
+  function deleteReport(id) {
+    var next = inbox.filter(function(r) { return r.id !== id; });
+    persistInbox(next);
+    if (openReportId === id) setOpenReportId(null);
+    showToast("Report deleted");
+  }
+
+  async function shareReport(r) {
+    var text = reportToShareText(r);
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "Gold Pro Report — " + r.material, text: text });
+        showToast("Shared");
+        return;
+      }
+    } catch (e) {}
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast("Report copied to clipboard");
+    } catch (e) {
+      downloadText("goldpro-report-" + r.material + "-" + r.createdAt + ".txt", text);
+      showToast("Report downloaded");
+    }
+  }
+
+  function downloadReportFile(r) {
+    downloadText("goldpro-report-" + r.material + "-" + r.createdAt + ".txt", reportToShareText(r));
+    showToast("Report downloaded");
+  }
+
+  function emailReport(r) {
+    var to = (profile && profile.email) || r.user_email || "";
+    if (!to || to.indexOf("@") < 0) {
+      showToast("Save your email in Profile first");
+      setTab("profile");
+      return;
+    }
+    var subject = encodeURIComponent("Gold Pro Report — " + (r.displayName || r.material) + " · " + (r.stampFull || ""));
+    var body = encodeURIComponent(reportToShareText(r));
+    var url = "mailto:" + encodeURIComponent(to) + "?subject=" + subject + "&body=" + body;
+    try {
+      window.location.href = url;
+      showToast("Opening email to " + to);
+    } catch (e) {
+      showToast("Could not open email app");
+    }
+  }
+
+  function saveProfile() {
+    showToast("Saved • " + (profile.name || "empty") + " • " + (profile.mobile || "empty") + " • " + (profile.email || "empty"));
+    try { localStorage.setItem("gp_profile", JSON.stringify(profile)); } catch (e) {}
+  }
+
+  var tvSymbol = TV_SYMBOLS[active] || "OANDA:XAUUSD";
+  var tvInterval = "30";
+  var miniUrl = "https://s.tradingview.com/embed-widget/mini-symbol-overview/?colorTheme=dark&isTransparent=1&symbol=" + encodeURIComponent(tvSymbol) + "&locale=en";
+  var chartUrl = "https://s.tradingview.com/widgetembed/?frameElementId=tradingview_chart&symbol=" + encodeURIComponent(tvSymbol) + "&interval=" + tvInterval + "&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=0&saveimage=0&toolbarbg=131722&studies=%5B%7B%22id%22%3A%22MASimple%40tv-basicstudies%22%2C%22inputs%22%3A%7B%22length%22%3A50%7D%7D%5D&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides=%7B%22moving%20average.length%22%3A50%2C%22moving%20average.plot.color%22%3A%22%23ffffff%22%2C%22moving%20average.plot.linewidth%22%3A3%7D&overrides=%7B%22volumePaneSize%22%3A%22tiny%22%7D&locale=en";
+
+  var sessionStrip = useMemo(function() { return SESSIONS.concat(SESSIONS).concat(SESSIONS); }, []);
+  var newsStrip = useMemo(function() { return news.concat(news).concat(news); }, [news]);
+  var savings = currency.monthly * 12 - currency.yearly;
+
+  /* OPEN REPORT PAGE — Email-style white document */
+  if (openReport) {
+    var r = openReport;
+    var newsItems = NEWS_SOURCES.slice(0, 4).map(function(src, i) {
+      return {
+        source: src,
+        logo: NEWS_LOGOS[src],
+        title: r["news" + (i + 1)] || "",
+        summary: r["news" + (i + 1)] || ""
+      };
+    });
+    var trendStr = String(r.trend || "");
+    var trendColor = trendStr.indexOf("Bull") >= 0 ? "#15803d" : trendStr.indexOf("Bear") >= 0 ? "#b91c1c" : "#a16207";
+    var story = buildFourHourStory(r);
+    var isDark = reportTheme === "dark";
+    var bg = isDark ? "#000" : "#e8eaed";
+    var card = isDark ? "#000" : "#fff";
+    var fg = isDark ? "#f1f1f1" : "#202124";
+    var muted = isDark ? "#9aa0a6" : "#5f6368";
+    var line = isDark ? "#2a2a2a" : "#dadce0";
+    var accent = isDark ? "#eab308" : "#1a73e8";
+    return (
+      <div style={{ minHeight: "100vh", background: bg, color: fg, maxWidth: 560, margin: "0 auto", position: "relative" }}>
+        {/* Top bar */}
+        <div style={{ position: "sticky", top: 0, zIndex: 100, background: card, borderBottom: "1px solid " + line, padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+          <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+            <div style={{ fontWeight: 600, fontSize: 13, color: fg }}>{(reportMode === "4h" ? "4H Market Story" : "1H Snapshot") + " · " + (r.material || "")}</div>
+            <div style={{ fontSize: 11, color: muted }}>{r.stampFull}</div>
+          </div>
+          <button onClick={function() { setReportMode("1h"); }} className="active-scale" style={{ background: reportMode === "1h" ? accent : "transparent", color: reportMode === "1h" ? (isDark ? "#000" : "#fff") : muted, border: "1px solid " + line, padding: "6px 10px", borderRadius: 8, fontWeight: 800, fontSize: 11 }}>1H</button>
+          <button onClick={function() { setReportMode("4h"); }} className="active-scale" style={{ background: reportMode === "4h" ? accent : "transparent", color: reportMode === "4h" ? (isDark ? "#000" : "#fff") : muted, border: "1px solid " + line, padding: "6px 10px", borderRadius: 8, fontWeight: 800, fontSize: 11, marginRight: 12 }}>4H</button>
+          <button onClick={function() { setReportTheme(isDark ? "light" : "dark"); }} className="active-scale" style={{ background: "transparent", color: fg, border: "1px solid " + line, padding: "6px 12px", borderRadius: 8, fontWeight: 800, fontSize: 11, marginLeft: "auto" }}>{isDark ? "Light" : "Dark"}</button>
+          <button onClick={function() { deleteReport(r.id); }} className="active-scale" style={{ background: "transparent", border: "1px solid #d93025", color: "#d93025", padding: "6px 12px", borderRadius: 8, fontWeight: 700, fontSize: 12, marginLeft: 8 }}>Delete</button>
+        </div>
+
+        {/* White email body */}
+        <div style={{ background: card, margin: "12px 10px 24px", borderRadius: 8, boxShadow: isDark ? "none" : "0 1px 3px rgba(60,64,67,0.15)", overflow: "hidden", border: "1px solid " + line }}>
+          <div style={{ padding: "28px 22px 36px", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif", lineHeight: 1.65, color: fg }}>
+
+            {reportMode === "4h" ? (
+              <div>
+                <div style={{ borderBottom: "2px solid " + accent, paddingBottom: 14, marginBottom: 22 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 11, color: accent, fontWeight: 700, letterSpacing: 0.5, marginBottom: 4 }}>4-HOUR MARKET NARRATIVE</div>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: fg }}>{story.title}</div>
+                    </div>
+                    <button onClick={function() { setOpenReportId(null); }} className="active-scale" style={{ background: isDark ? "#111" : "#fff", border: "1px solid " + line, color: fg, width: 40, height: 40, borderRadius: 20, fontWeight: 800, fontSize: 16, flexShrink: 0 }}>✕</button>
+                  </div>
+                </div>
+                <div style={{ marginBottom: 18 }}>
+                  <div style={{ fontSize: 12, color: muted, fontWeight: 700, marginBottom: 6, letterSpacing: 0.4 }}>CLIENT</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: fg, marginBottom: 2 }}>Name: {r.username || (profile && profile.name) || "Prime User"}</div>
+                  <div style={{ fontSize: 14, color: muted }}>Email: {r.user_email || (profile && profile.email) || "user@goldpro.com"}</div>
+                </div>
+                <div style={{ marginBottom: 18 }}>
+                  <div style={{ fontSize: 12, color: "#5f6368", fontWeight: 700, marginBottom: 6 }}>CHAPTER 1 — OPENING</div>
+                  <div style={{ fontSize: 15, lineHeight: 1.75 }}>{story.opening}</div>
+                </div>
+                <div style={{ marginBottom: 18 }}>
+                  <div style={{ fontSize: 12, color: "#5f6368", fontWeight: 700, marginBottom: 6 }}>CHAPTER 2 — THE MAP</div>
+                  <div style={{ fontSize: 15, lineHeight: 1.75 }}>{story.levels}</div>
+                  <div style={{ marginTop: 12, border: "1px solid #dadce0", borderRadius: 10, padding: 12, background: "#f8f9fa" }}>
+                    <div style={{ height: 10, borderRadius: 6, background: "linear-gradient(90deg,#22c55e 0%,#eab308 50%,#ef4444 100%)", marginBottom: 8 }} />
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 700 }}>
+                      <span style={{ color: "#15803d" }}>{"Support " + String(r.support || "")}</span>
+                      <span style={{ color: "#a16207" }}>{String(r.price || "")}</span>
+                      <span style={{ color: "#b91c1c" }}>{"Resistance " + String(r.resistance || "")}</span>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ marginBottom: 18 }}>
+                  <div style={{ fontSize: 12, color: muted, fontWeight: 700, marginBottom: 8 }}>LIVE CHART</div>
+                  <div style={{ borderRadius: 8, overflow: "hidden", border: "1px solid " + line, background: isDark ? "#000" : "#f8f9fa" }}>
+                    <iframe
+                      title="tv-4h"
+                      src={"https://s.tradingview.com/widgetembed/?frameElementId=tv4h&symbol=" + encodeURIComponent(tvSymbolFor(r.material)) + "&interval=240&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=0&saveimage=0&theme=" + (isDark ? "dark" : "light") + "&style=1&timezone=Etc%2FUTC&withdateranges=0&hideideas=1&hidevolume=1"}
+                      style={{ width: "100%", height: 240, border: "none", display: "block" }}
+                    />
+                  </div>
+                </div>
+                <div style={{ marginBottom: 18 }}>
+                  <div style={{ fontSize: 12, color: muted, fontWeight: 700, marginBottom: 6 }}>CHAPTER 3 — INSIDE THE RANGE</div>
+                  <div style={{ fontSize: 15, lineHeight: 1.75 }}>{story.middle}</div>
+                </div>
+                <div style={{ marginBottom: 18 }}>
+                  <div style={{ fontSize: 12, color: "#5f6368", fontWeight: 700, marginBottom: 6 }}>CHAPTER 4 — MARKET MEMORY</div>
+                  <div style={{ fontSize: 15, lineHeight: 1.75 }}>{story.memory}</div>
+                </div>
+                <div style={{ marginBottom: 18 }}>
+                  <div style={{ fontSize: 12, color: "#5f6368", fontWeight: 700, marginBottom: 6 }}>CHAPTER 5 — CLOSING</div>
+                  <div style={{ fontSize: 15, lineHeight: 1.75 }}>{story.ending}</div>
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <div style={{ fontSize: 12, color: "#5f6368", fontWeight: 700, marginBottom: 10 }}>VOICES FROM THE MARKET</div>
+                  {newsItems.map(function(n) {
+                    return (
+                      <div key={n.source} style={{ marginBottom: 12 }}>
+                        <div style={{ fontWeight: 700, color: "#1a73e8", fontSize: 14 }}>{n.source}</div>
+                        <div style={{ fontSize: 14 }}>{n.title}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div>
+            {/* Header line */}
+            <div style={{ borderBottom: "2px solid " + accent, paddingBottom: 14, marginBottom: 22 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11, color: accent, fontWeight: 700, letterSpacing: 0.5, marginBottom: 4 }}>OFFICIAL MARKET REPORT</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: fg }}>{r.displayName || r.material}</div>
+                </div>
+                <button onClick={function() { setOpenReportId(null); }} className="active-scale" style={{ background: isDark ? "#111" : "#fff", border: "1px solid " + line, color: fg, width: 40, height: 40, borderRadius: 20, fontWeight: 800, fontSize: 16, flexShrink: 0 }}>✕</button>
+              </div>
+            </div>
+
+            {/* Client */}
+            <div style={{ marginBottom: 22 }}>
+              <div style={{ fontSize: 12, color: "#5f6368", fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.4 }}>Client</div>
+              <div style={{ fontSize: 15 }}><strong>Name:</strong> {r.username || "Prime User"}</div>
+              <div style={{ fontSize: 15 }}><strong>Email:</strong> {r.user_email || "user@goldpro.com"}</div>
+            </div>
+
+            {/* Material */}
+            <div style={{ marginBottom: 22 }}>
+              <div style={{ fontSize: 12, color: "#5f6368", fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.4 }}>Material</div>
+              <div style={{ fontSize: 18, fontWeight: 700 }}>{r.displayName || r.material}</div>
+              <div style={{ fontSize: 13, color: "#5f6368" }}>{r.material}</div>
+            </div>
+
+            {/* Price */}
+            <div style={{ marginBottom: 22 }}>
+              <div style={{ fontSize: 12, color: "#5f6368", fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.4 }}>Live Price</div>
+              <div style={{ fontSize: 26, fontWeight: 700, marginBottom: 4 }}>{r.price}</div>
+              <div style={{ fontSize: 13, color: "#5f6368", marginBottom: 8 }}>Trend: <span style={{ color: trendColor, fontWeight: 700 }}>{r.trend}</span> · Support {r.support} · Resistance {r.resistance}</div>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "#5f6368", marginBottom: 12 }}>
+                <img src="https://www.google.com/s2/favicons?domain=tradingview.com&sz=32" width="16" height="16" style={{ borderRadius: 2 }} />
+                Source: TradingView
+              </div>
+              <div style={{ marginBottom: 12, border: "1px solid #dadce0", borderRadius: 10, padding: 12, background: "#f8f9fa" }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#5f6368", marginBottom: 8 }}>Key Levels Map</div>
+                <div style={{ height: 10, borderRadius: 6, background: "linear-gradient(90deg,#22c55e 0%,#eab308 50%,#ef4444 100%)", marginBottom: 8 }} />
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 700 }}>
+                  <span style={{ color: "#15803d" }}>{"Support " + String(r.support || "")}</span>
+                  <span style={{ color: "#a16207" }}>{String(r.price || "")}</span>
+                  <span style={{ color: "#b91c1c" }}>{"Resistance " + String(r.resistance || "")}</span>
+                </div>
+                <div style={{ fontSize: 11, color: "#5f6368", marginTop: 8 }}>Green = support (buyers) · Gold = current price · Red = resistance (sellers)</div>
+              </div>
+              <div style={{ borderRadius: 8, overflow: "hidden", border: "1px solid #dadce0", background: "#f8f9fa" }}>
+                <div style={{ padding: "8px 10px", fontSize: 11, color: "#5f6368", fontWeight: 600, borderBottom: "1px solid #dadce0", display: "flex", justifyContent: "space-between" }}>
+                  <span>Live Chart</span>
+                  <a href={"https://www.tradingview.com/chart/?symbol=" + encodeURIComponent(tvSymbolFor(r.material))} target="_blank" rel="noopener noreferrer" style={{ color: "#1a73e8", textDecoration: "none" }}>Open full chart ↗</a>
+                </div>
+                <iframe
+                  title="tv-chart"
+                  src={"https://s.tradingview.com/widgetembed/?frameElementId=tv&symbol=" + encodeURIComponent(tvSymbolFor(r.material)) + "&interval=60&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=0&saveimage=0&toolbarbg=f1f3f6&theme=light&style=1&timezone=Etc%2FUTC&withdateranges=0&hideideas=1&studies=[]&hidevolume=1"}
+                  style={{ width: "100%", height: 220, border: "none", display: "block" }}
+                  allowFullScreen
+                />
+              </div>
+            </div>
+
+            <hr style={{ border: "none", borderTop: "1px solid #dadce0", margin: "8px 0 22px" }} />
+
+            {/* 4 News */}
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ fontSize: 12, color: "#5f6368", fontWeight: 600, marginBottom: 14, textTransform: "uppercase", letterSpacing: 0.4 }}>Four Institutional News Reports</div>
+              {newsItems.map(function(n, i) {
+                var href = NEWS_LINKS[n.source] || "#";
+                return (
+                  <div key={n.source} style={{ marginBottom: 20, paddingBottom: 16, borderBottom: i < 3 ? "1px solid #f1f3f4" : "none" }}>
+                    <a href={href} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, textDecoration: "none" }}>
+                      <img src={n.logo} width="22" height="22" style={{ borderRadius: 4, background: "#fff", border: "1px solid #eee" }} />
+                      <span style={{ fontWeight: 700, fontSize: 14, color: "#1a73e8" }}>{n.source}</span>
+                      <span style={{ fontSize: 11, color: "#9aa0a6", marginLeft: 4 }}>↗ Open source</span>
+                    </a>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: "#202124", marginBottom: 6, lineHeight: 1.4 }}>{n.title}</div>
+                    <div style={{ fontSize: 14, color: "#3c4043", marginBottom: 8, lineHeight: 1.55 }}>{n.summary}</div>
+                    <a href={href} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: "#1a73e8", fontWeight: 600 }}>Read on {n.source} →</a>
+                  </div>
+                );
+              })}
+            </div>
+
+            <hr style={{ border: "none", borderTop: "1px solid #dadce0", margin: "8px 0 22px" }} />
+
+            {/* Summary */}
+            <div style={{ marginBottom: 24 }}>
+              {(r.key_levels || r.session_note || r.risk_note) ? (
+              <div style={{ marginBottom: 20 }}>
+                {r.key_levels ? (
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, color: "#5f6368", fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.4 }}>Key Levels</div>
+                    <div style={{ fontSize: 14, color: "#202124", lineHeight: 1.55, fontWeight: 600 }}>{r.key_levels}</div>
+                  </div>
+                ) : null}
+                {r.session_note ? (
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, color: "#5f6368", fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.4 }}>Session Read</div>
+                    <div style={{ fontSize: 14, color: "#202124", lineHeight: 1.65 }}>{r.session_note}</div>
+                  </div>
+                ) : null}
+                {r.risk_note ? (
+                  <div style={{ marginBottom: 12, padding: "12px 14px", borderRadius: 8, background: "#fef7e0", border: "1px solid #f9e5a5", fontSize: 13, color: "#7a5c00", lineHeight: 1.55 }}>
+                    {r.risk_note}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            <div style={{ fontSize: 12, color: "#5f6368", fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.4 }}>Final Summary</div>
+              <div style={{ fontSize: 15, color: "#202124", lineHeight: 1.65, marginBottom: 12 }}>{r.summary || r.analysis}</div>
+              <a href={NEWS_LINKS["Reuters"]} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: "#1a73e8", textDecoration: "none" }}>
+                <img src={NEWS_LOGOS["Reuters"]} width="18" height="18" style={{ borderRadius: 3, background: "#fff", border: "1px solid #eee" }} />
+                <span>Summary source: <strong>Reuters</strong> ↗</span>
+              </a>
+            </div>
+
+            {/* VIP */}
+            <div style={{ background: "#fef7e0", border: "1px solid #f9e5a5", borderRadius: 8, padding: "14px 16px", marginBottom: 12, fontSize: 13, color: "#7a5c00", lineHeight: 1.55, fontWeight: 600 }}>
+              ★ This report is provided exclusively for Gold Pro Analyzer Premium users. Data is sourced only from approved global financial institutions.
+            </div>
+
+            {/* Privacy */}
+            <div style={{ background: "#e8f0fe", border: "1px solid #c2d7f8", borderRadius: 8, padding: "14px 16px", marginBottom: 8, fontSize: 13, color: "#174ea6", lineHeight: 1.55, fontWeight: 600 }}>
+              🔒 Privacy: Live reports are delivered from Gold Pro servers and cached on your device. Personal profile data stays local.
+            </div>
+
+            <div style={{ marginTop: 28, paddingTop: 16, borderTop: "1px solid #dadce0", fontSize: 11, color: "#9aa0a6", textAlign: "center" }}>
+              Gold Pro Analyzer · Official Market Intelligence · {r.stampFull}
+            </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div style={{ padding: "0 12px 40px", display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={function() { shareReport(r); }} className="active-scale" style={{ flex: 1, background: "#1a73e8", color: "#fff", border: "none", padding: 14, borderRadius: 24, fontWeight: 700, fontSize: 14 }}>Share</button>
+            <button onClick={function() { downloadReportFile(r); }} className="active-scale" style={{ flex: 1, background: "#fff", color: "#1a73e8", border: "1px solid #dadce0", padding: 14, borderRadius: 24, fontWeight: 700, fontSize: 14 }}>Download</button>
+            <button onClick={function() { emailReport(r); }} className="active-scale" style={{ flex: 1, background: "#111", color: "#fff", border: "1px solid #333", padding: 14, borderRadius: 24, fontWeight: 700, fontSize: 14 }}>Email</button>
+          </div>
+          <button onClick={function() { setTab("home"); setActive(r.material); setOpenReportId(null); showToast("Chart opened " + r.material); }} className="active-scale" style={{ width: "100%", background: "transparent", color: "#5f6368", border: "1px solid #dadce0", padding: 12, borderRadius: 24, fontWeight: 600, fontSize: 13 }}>Open Chart · {r.material}</button>
+        </div>
+      </div>
+    );
+  }
+
+  /* MAIN SHELL */
+  return (
+    <div style={{ minHeight: "100vh", width: "100%", maxWidth: "100vw", overflowX: "hidden", background: "#000", color: "#fff" }}>
+      <div style={{ width: "100%", maxWidth: 560, margin: "0 auto", position: "relative" }}>
+        <div style={{ position: "sticky", top: 0, zIndex: 100, background: "#000", borderBottom: "1px solid #333", padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", minWidth: 0 }}>
+            <div style={{ width: 32, height: 32, border: "2px solid #fff", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, background: "#000", fontSize: 14, flexShrink: 0 }}>G</div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 800, lineHeight: 1, fontSize: 15 }}>Gold Pro</div>
+              <div style={{ fontSize: 9, color: "#666", fontWeight: 700, marginTop: 2 }}>Dark Terminal • White & Black</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <div style={{ background: wsStatus === "live" ? "#0a1a0a" : "#1a0a0a", color: wsStatus === "live" ? "#15803d" : wsStatus === "connecting" ? "#eab308" : "#b91c1c", border: "1px solid " + (wsStatus === "live" ? "#15803d" : wsStatus === "connecting" ? "#eab308" : "#b91c1c"), padding: "4px 10px", borderRadius: 12, fontSize: 9, fontWeight: 900 }}>
+              {wsStatus === "live" ? "● WS LIVE" : wsStatus === "connecting" ? "● WS ..." : "● WS OFF"}
+            </div>
+            <button onClick={function() { setAppTheme(appTheme === "dark" ? "light" : "dark"); showToast(appTheme === "dark" ? "Light mode" : "Dark mode"); }} className="active-scale" style={{ background: appTheme === "dark" ? "#fff" : "#111", color: appTheme === "dark" ? "#000" : "#fff", border: "1px solid " + (appTheme === "dark" ? "#fff" : "#444"), padding: "6px 12px", borderRadius: 12, fontSize: 10, fontWeight: 900 }}>{appTheme === "dark" ? "DARK" : "LIGHT"}</button>
+          </div>
+        </div>
+
+        
+        {!legalAccepted && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 200000, background: "#000", color: "#fff", overflow: "auto", padding: 20, paddingBottom: 40 }}>
+            <div style={{ maxWidth: 560, margin: "0 auto" }}>
+              <div style={{ fontSize: 22, fontWeight: 900, marginBottom: 8 }}>Gold Pro</div>
+              <div style={{ fontSize: 13, color: "#aaa", marginBottom: 20 }}>Please review and accept before using the app.</div>
+              <div style={{ background: "#111", border: "1px solid #333", borderRadius: 12, padding: 14, marginBottom: 12, fontSize: 11, lineHeight: 1.55, color: "#ddd", maxHeight: 180, overflow: "auto", whiteSpace: "pre-wrap", fontFamily: "ui-monospace, Menlo, monospace" }}>{LEGAL_DISCLAIMER}</div>
+              <div style={{ background: "#111", border: "1px solid #333", borderRadius: 12, padding: 14, marginBottom: 12, fontSize: 10, lineHeight: 1.5, color: "#ccc", maxHeight: 220, overflow: "auto", whiteSpace: "pre-wrap", fontFamily: "ui-monospace, Menlo, monospace" }}>{LEGAL_TERMS}</div>
+              <div style={{ background: "#111", border: "1px solid #333", borderRadius: 12, padding: 14, marginBottom: 16, fontSize: 10, lineHeight: 1.5, color: "#ccc", maxHeight: 220, overflow: "auto", whiteSpace: "pre-wrap", fontFamily: "ui-monospace, Menlo, monospace" }}>{LEGAL_PRIVACY}</div>
+              <button
+                onClick={function() {
+                  try { localStorage.setItem("gp_legal_ok", "1"); } catch (e) {}
+                  setLegalAccepted(true);
+                  showToast("Accepted • Welcome to Gold Pro");
+                }}
+                className="active-scale"
+                style={{ width: "100%", background: "#fff", color: "#000", border: "none", padding: 16, borderRadius: 12, fontWeight: 900, fontSize: 15 }}
+              >I Agree — Continue</button>
+              <div style={{ fontSize: 10, color: "#666", marginTop: 12, textAlign: "center" }}>By tapping Agree you accept the Terms, Privacy Policy, and Disclaimer. These texts cannot be modified by users.</div>
+            </div>
+          </div>
+        )}
+
+        {legalView && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 150000, background: "#000", color: "#fff", overflow: "auto", padding: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <div style={{ fontWeight: 900, fontSize: 16 }}>{legalView === "terms" ? "Terms & Conditions" : "Privacy Policy"}</div>
+              <button onClick={function() { setLegalView(null); }} className="active-scale" style={{ background: "#fff", color: "#000", border: "none", padding: "8px 14px", borderRadius: 8, fontWeight: 900 }}>Close</button>
+            </div>
+            <div style={{ fontSize: 11, lineHeight: 1.55, color: "#ccc", whiteSpace: "pre-wrap", fontFamily: "ui-monospace, Menlo, monospace" }}>
+              {legalView === "terms" ? LEGAL_TERMS : LEGAL_PRIVACY}
+            </div>
+          </div>
+        )}
+
+        {toast && (
+          <div style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", zIndex: 100002, background: "#fff", color: "#000", padding: "8px 16px", borderRadius: 999, fontSize: 12, fontWeight: 800, boxShadow: "0 20px 40px rgba(0,0,0,0.5)", border: "1px solid #fff" }}>{toast}</div>
+        )}
+
+        {/* HOME */}
+        <div style={{ display: tab === "home" ? "block" : "none", paddingBottom: 180, background: appTheme === "dark" ? "#000" : "#f4f4f5" }}>
+          <div style={{ margin: 8, borderRadius: 14, overflow: "hidden", border: "2px solid #fff", background: "#000" }}>
+            <div style={{ padding: "4px 10px", display: "flex", justifyContent: "space-between", borderBottom: "1px solid #222" }}>
+              <span style={{ fontSize: 8, color: "#888", fontWeight: 800 }}>Live sessions · 30m</span>
+              <span style={{ fontSize: 7, color: "#15803d", fontWeight: 800 }}>● LIVE</span>
+            </div>
+            <div style={{ overflow: "hidden", whiteSpace: "nowrap", height: 44, display: "flex", alignItems: "center" }}>
+              <div className="ticker-track" style={{ display: "inline-flex", alignItems: "center", gap: 28, minWidth: "max-content" }}>
+                {sessionStrip.map(function(s, i) {
+                  var st = sessionStatus(s, nowMin);
+                  var label = "CLOSED", color = "#b91c1c", bg = "#1a0a0a", border = "#b91c1c", extra = null;
+                  if (st === "open") {
+                    label = "OPEN"; color = "#15803d"; bg = "#0a1a0a"; border = "#15803d";
+                    var left = minsToClose(s, nowMin);
+                    extra = left <= 30
+                      ? <span style={{ fontSize: 11, fontWeight: 800, color: "#15803d" }}>Last {fmtMins(left)}</span>
+                      : <span style={{ fontSize: 10, color: "#15803d" }}>Closes {fmtMins(left)}</span>;
+                  } else if (st === "soon") {
+                    label = "SOON"; color = "#eab308"; bg = "#1a1500"; border = "#eab308";
+                    extra = <span style={{ fontSize: 11, fontWeight: 800, color: "#eab308" }}>Opens {fmtMins(minsToOpen(s.open, nowMin))}</span>;
+                  } else {
+                    extra = <span style={{ fontSize: 10, color: "#666" }}>Opens {fmtMins(minsToOpen(s.open, nowMin))}</span>;
+                  }
+                  return (
+                    <React.Fragment key={s.name + "-" + i}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
+                        <span>{s.flag}</span><span>{s.name}</span>{extra}
+                        <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 8px", borderRadius: 999, display: "inline-flex", alignItems: "center", gap: 4, border: "1px solid " + border, background: bg, color: color }}>
+                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: color, display: "inline-block" }} />
+                          {label}
+                        </span>
+                      </span>
+                      <span style={{ color: "#333", fontSize: 14 }}>•</span>
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ margin: 8, borderRadius: 14, overflow: "hidden", border: "2px solid #fff", background: "#000" }}>
+            <div style={{ padding: "4px 10px", display: "flex", justifyContent: "space-between", borderBottom: "1px solid #222" }}>
+              <span style={{ fontSize: 8, color: "#888", fontWeight: 800 }}>Economy · high impact</span>
+              <span style={{ fontSize: 7, color: "#15803d", fontWeight: 800 }}>● LIVE</span>
+            </div>
+            <div style={{ overflow: "hidden", whiteSpace: "nowrap", height: 44, display: "flex", alignItems: "center" }}>
+              <div className="ticker-track slow" style={{ display: "inline-flex", alignItems: "center", gap: 32, minWidth: "max-content" }}>
+                {newsStrip.map(function(n, i) {
+                  return (
+                    <React.Fragment key={"news-" + i}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
+                        <span style={{ fontWeight: 800, fontSize: 11 }}>{n.time}</span>
+                        <span>{n.flag}</span>
+                        <span>{n.title}</span>
+                        <span style={{ fontSize: 9, background: "#1a0a0a", border: "1px solid #b91c1c", color: "#b91c1c", padding: "2px 8px", borderRadius: 999, display: "inline-flex", alignItems: "center", fontWeight: 800 }}>
+                          <span style={{ width: 6, height: 6, background: "#b91c1c", borderRadius: "50%", display: "inline-block", marginRight: 4 }} />HIGH
+                        </span>
+                      </span>
+                      <span style={{ color: "#333", fontSize: 14 }}>•</span>
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ background: appTheme === "dark" ? "#000" : "#fff", border: "1px solid " + (appTheme === "dark" ? "#333" : "#ddd"), borderRadius: 14, margin: 8, padding: 12 }}>
+            <div style={{ fontSize: 11, color: appTheme === "dark" ? "#fff" : "#111", fontWeight: 900, marginBottom: 8, letterSpacing: 0.4 }}>SEARCH / ADD SYMBOL</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input value={addInput} onChange={function(e) { setAddInput(e.target.value); }} onKeyDown={function(e) { if (e.key === "Enter") { var s = normalizeSymbol(addInput); if (!s) { showToast("Type a symbol first"); return; } selectSymbol(addInput); setAddInput(""); showToast(s + " added"); } }} placeholder="Type XAU, WTI, GBPUSD..." style={{ flex: 1, minWidth: 0, background: "#000", border: "2px solid #555", borderRadius: 10, padding: "14px 14px", color: "#fff", outline: "none", fontSize: 16, fontWeight: 800 }} />
+              <button onClick={function() { var s = normalizeSymbol(addInput); if (!s) { showToast("Type a symbol first"); return; } selectSymbol(addInput); setAddInput(""); showToast(s + " added"); }} className="active-scale" style={{ background: "#fff", color: "#000", border: "1px solid #fff", padding: "0 18px", borderRadius: 10, fontWeight: 900, minHeight: 50 }}>ADD</button>
+            </div>
+          </div>
+
+          <div style={{ background: "#000", border: "2px solid #fff", borderRadius: 14, margin: 8, padding: "16px 16px 14px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <div style={{ fontSize: 14, fontWeight: 900, color: "#fff" }}>{active}</div>
+              <div style={{ fontSize: 10, color: "#15803d", fontWeight: 800 }}>● LIVE</div>
+            </div>
+            <div style={{ fontSize: 32, fontWeight: 900, color: "#fff", letterSpacing: 0.3 }}>
+              {livePrice == null ? "—" : (Number(livePrice) > 50 ? Number(livePrice).toFixed(2) : Number(livePrice).toFixed(4))}
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4, color: liveChange == null ? "#666" : (liveChange >= 0 ? "#15803d" : "#b91c1c") }}>
+              {liveChange == null ? "" : ((liveChange >= 0 ? "+" : "") + Number(liveChange).toFixed(2) + "%")}
+            </div>
+          </div>
+
+          <div style={{ background: "#000", border: "1px solid #2a2a2a", borderRadius: 14, margin: 8, overflow: "hidden" }}>
+            <div style={{ padding: "8px 12px", background: "#000", borderBottom: "1px solid #222" }}>
+              <span style={{ fontSize: 12, fontWeight: 900, letterSpacing: 0.5 }}>{active}</span>
+            </div>
+            <div style={{ height: 360, background: "#000", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {online
+                ? <iframe src={chartUrl} style={{ width: "100%", height: "100%", border: 0 }} loading="lazy" title="chart" />
+                : <div style={{ textAlign: "center", padding: 24 }}>
+                    <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 4 }}>{active} Chart • MA50=50</div>
+                    <div style={{ fontSize: 10, color: "#666" }}>Offline preview – TradingView loads when online</div>
+                  </div>}
+            </div>
+
+          </div>
+        </div>
+
+        {/* INBOX */}
+        <div style={{ display: tab === "reports" ? "block" : "none", paddingBottom: 180 }}>
+          {/* Header */}
+          <div style={{ padding: "16px 16px 8px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 18 }}>Reports</div>
+              <div style={{ fontSize: 10, color: "#666" }}>{inbox.length} report{inbox.length === 1 ? "" : "s"}</div>
+            </div>
+            <button onClick={function() { fetchInboxFromApi(); }} disabled={reportGenerating} className="active-scale" style={{ background: "transparent", color: "#fff", border: "1px solid #444", padding: "8px 12px", borderRadius: 8, fontWeight: 800, fontSize: 11, opacity: reportGenerating ? 0.5 : 1 }}>{reportGenerating ? "..." : "Sync"}</button>
+          </div>
+
+          {/* ===== ZONE A: MATERIALS (generate only) ===== */}
+          <div style={{ margin: "8px 8px 0", padding: 14, borderRadius: 14, background: "#0a0a0a", border: "1px solid #333" }}>
+            <div style={{ fontSize: 11, color: "#fff", fontWeight: 900, letterSpacing: 0.5, marginBottom: 4 }}>① MATERIALS</div>
+            <div style={{ fontSize: 10, color: "#666", marginBottom: 10 }}>Search or tap a favorite to generate a report</div>
+            <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+              <input
+                value={materialQuery}
+                onChange={function(e) { setMaterialQuery(e.target.value); }}
+                onKeyDown={function(e) {
+                  if (e.key === "Enter") {
+                    var s = normalizeSymbol(materialQuery);
+                    if (!s) { showToast("Enter a material"); return; }
+                    setActive(s);
+                    showToast("Generating " + s + "...");
+                    pushNewReport(s);
+                  }
+                }}
+                placeholder="Material e.g. GOLD, WTI, XAG..."
+                style={{ flex: 1, minWidth: 0, background: "#000", border: "1px solid #333", borderRadius: 8, padding: "12px 14px", color: "#fff", outline: "none", fontSize: 14, fontWeight: 700 }}
+              />
+              <button
+                onClick={function() {
+                  var s = normalizeSymbol(materialQuery);
+                  if (!s) { showToast("Enter a material"); return; }
+                  setActive(s);
+                  showToast("Generating " + s + "...");
+                  pushNewReport(s);
+                }}
+                disabled={reportGenerating}
+                className="active-scale"
+                style={{ background: "#fff", color: "#000", border: "1px solid #fff", padding: "0 14px", borderRadius: 8, fontWeight: 900, fontSize: 12, minHeight: 44, opacity: reportGenerating ? 0.5 : 1 }}
+              >Generate</button>
+              <button
+                onClick={function() {
+                  var s = normalizeSymbol(materialQuery);
+                  if (!s) { showToast("Type a material first"); return; }
+                  addFavorite(s);
+                }}
+                className="active-scale"
+                title="Add to favorites"
+                style={{ background: "transparent", color: "#fff", border: "1px solid #444", padding: "0 12px", borderRadius: 8, fontWeight: 900, fontSize: 16, minHeight: 44 }}
+              >★</button>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <div style={{ fontSize: 10, color: "#888", fontWeight: 800 }}>PRIME FAVORITES</div>
+              <button onClick={resetFavorites} className="active-scale" style={{ fontSize: 9, color: "#888", fontWeight: 700, background: "transparent", border: "1px solid #333", borderRadius: 6, padding: "4px 8px" }}>Reset</button>
+            </div>
+            <div style={{ fontSize: 9, color: "#555", marginBottom: 8 }}>Tap generate · ✕ remove</div>
+            {favorites.length === 0 ? (
+              <div style={{ fontSize: 12, color: "#555", padding: "6px 0" }}>No favorites — type a material and tap ★</div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
+                {favorites.map(function(sym) {
+                  var label = (DISPLAY[sym] || sym).replace("/USD", "").replace("/JPY", "/¥");
+                  var short = sym.replace("USD", "").replace("JPY", "");
+                  if (short.length > 4) short = short.slice(0, 3);
+                  var isActive = active === sym;
+                  return (
+                    <div key={sym} style={{ position: "relative" }}>
+                      <button
+                        onClick={function() {
+                          setMaterialQuery(sym);
+                          setActive(sym);
+                          showToast("Generating " + (DISPLAY[sym] || sym) + "...");
+                          pushNewReport(sym);
+                        }}
+                        disabled={reportGenerating}
+                        className="active-scale"
+                        style={{
+                          width: "100%",
+                          background: isActive ? "#fff" : "#000",
+                          color: isActive ? "#000" : "#fff",
+                          border: isActive ? "1px solid #fff" : "1px solid #333",
+                          borderRadius: 10,
+                          padding: "10px 4px 14px",
+                          fontWeight: 900,
+                          fontSize: 10,
+                          lineHeight: 1.2,
+                          opacity: reportGenerating ? 0.5 : 1,
+                          minHeight: 48
+                        }}
+                      >
+                        <div>{short}</div>
+                        <div style={{ fontSize: 8, fontWeight: 700, opacity: 0.7, marginTop: 2 }}>{label}</div>
+                      </button>
+                      <button
+                        onClick={function(e) { e.stopPropagation(); removeFavorite(sym); }}
+                        title="Remove favorite"
+                        className="active-scale"
+                        style={{ position: "absolute", top: -4, right: -4, width: 20, height: 20, borderRadius: 10, background: "#222", color: "#ccc", border: "1px solid #444", fontSize: 10, fontWeight: 900, lineHeight: "18px", padding: 0 }}
+                      >✕</button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <div style={{ marginTop: 10, fontSize: 10, color: "#555" }}>
+              WS: {wsStatus === "live" ? "LIVE" : wsStatus === "connecting" ? "..." : "off"} · Hourly GOLD + WTI
+            </div>
+          </div>
+
+          {/* Spacer / visual separator */}
+          <div style={{ margin: "16px 16px 8px", display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ flex: 1, height: 1, background: "#222" }} />
+            <div style={{ fontSize: 10, color: "#666", fontWeight: 800, letterSpacing: 0.6 }}>MAILBOX</div>
+            <div style={{ flex: 1, height: 1, background: "#222" }} />
+          </div>
+
+          {/* ===== ZONE B: INBOX ===== */}
+          <div style={{ margin: "0 8px 8px", padding: 14, borderRadius: 14, background: "#000", border: "1px solid #2a2a2a" }}>
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 11, color: "#fff", fontWeight: 900, letterSpacing: 0.5 }}>② INBOX</div>
+              <div style={{ fontSize: 10, color: "#666", marginTop: 2 }}>
+                {inbox.length === 0
+                  ? "Empty"
+                  : (reportSearch
+                      ? (filteredInbox.length + " match" + (filteredInbox.length === 1 ? "" : "es") + " · " + inbox.length + " total")
+                      : (inbox.length + " report" + (inbox.length === 1 ? "" : "s")))}
+              </div>
+            </div>
+
+            {/* Search directly under MAILBOX / INBOX title — white frame + Search button */}
+            <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+              <input
+                value={reportSearch}
+                onChange={function(e) { setReportSearch(e.target.value); }}
+                onKeyDown={function(e) {
+                  if (e.key === "Enter") {
+                    var s = normalizeSymbol(reportSearch);
+                    if (s) setReportSearch(s);
+                  }
+                }}
+                placeholder="Search reports e.g. XAU, WTI, EURJPY..."
+                style={{ flex: 1, minWidth: 0, background: "#000", border: "2px solid #fff", borderRadius: 10, padding: "14px 14px", color: "#fff", outline: "none", fontSize: 14, fontWeight: 700 }}
+              />
+              <button
+                onClick={function() {
+                  var s = normalizeSymbol(reportSearch);
+                  if (!s) { showToast("Type a material to search"); return; }
+                  setReportSearch(s);
+                  showToast("Filter: " + s);
+                }}
+                className="active-scale"
+                style={{ background: "#000", color: "#fff", border: "2px solid #fff", padding: "0 16px", borderRadius: 10, fontWeight: 900, fontSize: 12, minHeight: 48 }}
+              >Search</button>
+            </div>
+
+            {inbox.length === 0 ? (
+              <div style={{ padding: "28px 12px", textAlign: "center", color: "#555", fontSize: 13 }}>
+                No reports yet<br />
+                <span style={{ fontSize: 11 }}>Generate above or wait for live feed</span>
+              </div>
+            ) : filteredInbox.length === 0 ? (
+              <div style={{ padding: "24px 12px", textAlign: "center", color: "#555", fontSize: 13 }}>
+                No reports for "{reportSearch}"
+              </div>
+            ) : (
+              <div style={{ border: "1px solid #1a1a1a", borderRadius: 10, overflow: "hidden", maxHeight: "42vh", overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+                {filteredInbox.map(function(item, idx) {
+                  return (
+                    <div key={item.id} style={{ display: "flex", alignItems: "stretch", borderBottom: idx < filteredInbox.length - 1 ? "1px solid #1a1a1a" : "none", background: idx % 2 === 0 ? "#000" : "#0a0a0a" }}>
+                      <button onClick={function() { setOpenReportId(item.id); }} style={{ flex: 1, minWidth: 0, textAlign: "left", background: "transparent", border: "none", padding: "12px", color: "#fff", cursor: "pointer", display: "flex", gap: 10, alignItems: "center" }}>
+                        <div style={{ width: 38, height: 38, borderRadius: 9, background: "#111", border: "1px solid #333", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 10, flexShrink: 0 }}>{item.material.slice(0, 3)}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                            <div style={{ fontWeight: 800, fontSize: 13 }}>
+                              {item.material}
+                              {item.stars === 3 ? <span style={{ color: "#eab308", marginLeft: 6 }}>★★★</span> : (item.stars === 1 ? <span style={{ color: "#eab308", marginLeft: 6 }}>★</span> : null)}
+                              {item.timeframe ? <span style={{ fontSize: 10, color: "#666", marginLeft: 6 }}>{item.timeframe}</span> : null}
+                            </div>
+                            <div style={{ fontSize: 10, color: "#888" }}>{item.timeLabel}</div>
+                          </div>
+                          <div style={{ fontSize: 11, color: "#aaa", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.structure || item.trend} · {item.price}</div>
+                        </div>
+                      </button>
+                      <button
+                        onClick={function(e) {
+                          e.stopPropagation();
+                          if (window.confirm("Delete " + item.material + " report?")) deleteReport(item.id);
+                        }}
+                        style={{ width: 44, border: "none", borderLeft: "1px solid #1a1a1a", background: "transparent", color: "#666", fontSize: 14 }}
+                      >🗑</button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {inbox.length > 0 ? (
+              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                <button
+                  onClick={function() { setMailboxOpen(true); }}
+                  className="active-scale"
+                  style={{ flex: 1, background: "#000", color: "#fff", border: "2px solid #fff", padding: 11, borderRadius: 10, fontWeight: 800, fontSize: 12 }}
+                >Full screen</button>
+                <button
+                  onClick={function() {
+                    if (window.confirm("Delete ALL " + inbox.length + " reports?")) {
+                      persistInbox([]);
+                      showToast("Inbox cleared");
+                    }
+                  }}
+                  className="active-scale"
+                  style={{ background: "transparent", color: "#d93025", border: "1px solid #5f2120", padding: "11px 12px", borderRadius: 10, fontWeight: 800, fontSize: 12 }}
+                >Clear</button>
+              </div>
+            ) : null}
+          </div>
+
+          {/* ===== FULL MAILBOX OVERLAY ===== */}
+          {mailboxOpen ? (
+            <div style={{ position: "fixed", inset: 0, zIndex: 200000, background: "#000", color: "#fff", display: "flex", flexDirection: "column" }}>
+              <div style={{ padding: "12px 12px", borderBottom: "1px solid #222", display: "flex", alignItems: "center", gap: 10, paddingTop: "max(12px, env(safe-area-inset-top))" }}>
+                <button
+                  onClick={function() { setMailboxOpen(false); }}
+                  className="active-scale"
+                  style={{ background: "#111", color: "#fff", border: "1px solid #444", width: 44, height: 44, borderRadius: 12, fontWeight: 900, fontSize: 20, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
+                  title="Back to Reports"
+                >←</button>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 900, fontSize: 16 }}>Full Inbox</div>
+                  <div style={{ fontSize: 10, color: "#888" }}>{filteredInbox.length} / {inbox.length}</div>
+                </div>
+                <button onClick={function() { setMailboxOpen(false); }} className="active-scale" style={{ background: "#fff", color: "#000", border: "none", padding: "10px 14px", borderRadius: 8, fontWeight: 900, fontSize: 12, flexShrink: 0 }}>Back</button>
+              </div>
+
+              <div style={{ padding: "10px 12px", borderBottom: "1px solid #1a1a1a" }}>
+                <div style={{ fontSize: 10, color: "#888", fontWeight: 800, marginBottom: 6 }}>FILTER REPORTS</div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <input
+                    value={reportSearch}
+                    onChange={function(e) { setReportSearch(e.target.value); }}
+                    placeholder="Filter e.g. XAU, WTI..."
+                    style={{ flex: 1, background: "#0a0a0a", border: "1px solid #333", borderRadius: 8, padding: "12px 14px", color: "#fff", outline: "none", fontSize: 14, fontWeight: 700 }}
+                  />
+                  {reportSearch ? (
+                    <button onClick={function() { setReportSearch(""); }} className="active-scale" style={{ background: "transparent", color: "#888", border: "1px solid #333", padding: "0 12px", borderRadius: 8, fontWeight: 800 }}>Clear</button>
+                  ) : null}
+                </div>
+                <div style={{ fontSize: 10, color: "#555", marginTop: 6 }}>Filter only</div>
+              </div>
+
+              <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+                {filteredInbox.length === 0 ? (
+                  <div style={{ padding: 40, textAlign: "center", color: "#555" }}>
+                    {inbox.length === 0 ? "Mailbox empty" : ("No match for \"" + reportSearch + "\"")}
+                  </div>
+                ) : (
+                  filteredInbox.map(function(item, idx) {
+                    return (
+                      <div key={item.id} style={{ display: "flex", borderBottom: "1px solid #1a1a1a", background: idx % 2 === 0 ? "#000" : "#080808" }}>
+                        <button
+                          onClick={function() { setOpenReportId(item.id); setMailboxOpen(false); }}
+                          style={{ flex: 1, minWidth: 0, textAlign: "left", background: "transparent", border: "none", padding: "14px 12px", color: "#fff", display: "flex", gap: 12, alignItems: "center" }}
+                        >
+                          <div style={{ width: 42, height: 42, borderRadius: 10, background: "#111", border: "1px solid #333", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 11, flexShrink: 0 }}>{item.material.slice(0, 3)}</div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                              <div style={{ fontWeight: 800, fontSize: 13 }}>
+                                {item.material}
+                                {item.stars === 3 ? <span style={{ color: "#eab308", marginLeft: 6 }}>★★★</span> : (item.stars === 1 ? <span style={{ color: "#eab308", marginLeft: 6 }}>★</span> : null)}
+                                {item.timeframe ? <span style={{ fontSize: 10, color: "#666", marginLeft: 6 }}>{item.timeframe}</span> : null}
+                              </div>
+                              <div style={{ fontSize: 10, color: "#888" }}>{item.timeLabel}</div>
+                            </div>
+                            <div style={{ fontSize: 11, color: "#aaa", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.structure || item.trend} · {item.price}{item.support && item.support !== "--" ? (" · S " + item.support + " / R " + item.resistance) : ""}</div>
+                            <div style={{ fontSize: 10, color: "#555", marginTop: 2 }}>{item.dateLabel} · #{item.report_count}</div>
+                          </div>
+                        </button>
+                        <button
+                          onClick={function(e) {
+                            e.stopPropagation();
+                            if (window.confirm("Delete " + item.material + " report?")) deleteReport(item.id);
+                          }}
+                          style={{ width: 52, border: "none", borderLeft: "1px solid #1a1a1a", background: "transparent", color: "#777", fontSize: 16 }}
+                        >🗑</button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              <div style={{ padding: "12px 12px", borderTop: "1px solid #222", paddingBottom: "max(12px, env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 8 }}>
+                <button
+                  onClick={function() { setMailboxOpen(false); }}
+                  className="active-scale"
+                  style={{ width: "100%", background: "#fff", color: "#000", border: "none", padding: 14, borderRadius: 12, fontWeight: 900, fontSize: 14 }}
+                >← Back</button>
+                {inbox.length > 0 ? (
+                  <button
+                    onClick={function() {
+                      if (window.confirm("Delete ALL " + inbox.length + " reports from this device?")) {
+                        persistInbox([]);
+                        showToast("Inbox cleared");
+                      }
+                    }}
+                    className="active-scale"
+                    style={{ width: "100%", background: "transparent", color: "#d93025", border: "1px solid #5f2120", padding: 12, borderRadius: 10, fontWeight: 800, fontSize: 12 }}
+                  >Clear all</button>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        {/* PROFILE */}
+        <div style={{ display: tab === "profile" ? "block" : "none", paddingBottom: 180, background: appTheme === "dark" ? "#000" : "#f4f4f5" }}>
+          <div style={{ padding: 16, maxWidth: 480, margin: "0 auto" }}>
+            <div style={{ marginBottom: 16, padding: 14, border: "1px solid #333", borderRadius: 12, background: "#0a0a0a", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 900, fontSize: 13, marginBottom: 4 }}></div>
+                <div style={{ fontSize: 10, color: "#888", lineHeight: 1.45 }}>Bell on = notify when new GOLD / WTI reports arrive</div>
+              </div>
+              <button
+                onClick={function() {
+                  var next = !notifEnabled;
+                  setNotifEnabled(next);
+                  try { localStorage.setItem("gp_notif", next ? "1" : "0"); } catch (e) {}
+                  if (next) {
+                    try {
+                      if (typeof Notification !== "undefined" && Notification.permission === "default") {
+                        Notification.requestPermission();
+                      }
+                    } catch (e) {}
+                    showToast("Notifications ON");
+                  } else {
+                    showToast("Notifications OFF");
+                  }
+                }}
+                className="active-scale"
+                title={notifEnabled ? "Notifications ON" : "Notifications OFF"}
+                style={{
+                  width: 52, height: 52, borderRadius: 26, flexShrink: 0,
+                  background: notifEnabled ? "#fff" : "#111",
+                  color: notifEnabled ? "#000" : "#666",
+                  border: notifEnabled ? "2px solid #fff" : "1px solid #333",
+                  fontSize: 22, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center",
+                  boxShadow: notifEnabled ? "0 0 12px rgba(255,255,255,0.25)" : "none"
+                }}
+              >{notifEnabled ? "🔔" : "🔕"}</button>
+            </div>
+
+            <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 6 }}>Profile</div>
+            <div style={{ fontSize: 10, color: "#666", marginBottom: 14 }}>Name · Mobile · Email</div>
+
+            <div style={{ background: "#000", border: "1px solid #2a2a2a", borderRadius: 12, padding: 14, marginBottom: 14 }}>
+              <div style={{ fontWeight: 800, marginBottom: 12 }}>Personal Information</div>
+              <input value={profile.name} onChange={function(e) { setProfile(Object.assign({}, profile, { name: e.target.value })); }} placeholder="Full Name" type="text" style={{ width: "100%", background: "#000", border: "1px solid #333", borderRadius: 10, padding: 16, color: "#fff", marginBottom: 12, fontSize: 16, outline: "none" }} />
+              <input value={profile.mobile} onChange={function(e) { setProfile(Object.assign({}, profile, { mobile: e.target.value })); }} placeholder="Mobile Number" type="tel" style={{ width: "100%", background: "#000", border: "1px solid #333", borderRadius: 10, padding: 16, color: "#fff", marginBottom: 12, fontSize: 16, outline: "none" }} />
+              <input value={profile.email} onChange={function(e) { setProfile(Object.assign({}, profile, { email: e.target.value })); }} placeholder="Email Address" type="email" style={{ width: "100%", background: "#000", border: "1px solid #333", borderRadius: 10, padding: 16, color: "#fff", marginBottom: 12, fontSize: 16, outline: "none" }} />
+              <button onClick={saveProfile} className="active-scale" style={{ width: "100%", background: "transparent", color: "#fff", border: "1px solid #fff", padding: 16, borderRadius: 8, fontWeight: 900 }}>Save Profile</button>
+            </div>
+
+            <div style={{ background: "#000", border: "2px solid #fff", borderRadius: 12, padding: 14, marginBottom: 14 }}>
+              <div style={{ fontWeight: 800, marginBottom: 12 }}>Subscription - {currency.symbol}{currency.monthly} Monthly / {currency.symbol}{currency.yearly} Yearly</div>
+              <div onClick={function() { setBilling("monthly"); }} style={{ borderRadius: 12, padding: 12, marginBottom: 8, cursor: "pointer", border: billing === "monthly" ? "2px solid #fff" : "1px solid #2a2a2a", background: billing === "monthly" ? "#111" : "#000" }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <div>
+                    <div style={{ fontWeight: 800 }}>Pro Monthly <span style={{ background: "#fff", color: "#000", padding: "2px 6px", borderRadius: 10, fontSize: 8, marginLeft: 4 }}>Popular</span></div>
+                    <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>Unlimited Material Reports + High Impact Calendar</div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontWeight: 900, fontSize: 18 }}>{currency.symbol}{currency.monthly}</div>
+                    <div style={{ fontSize: 10, color: "#888" }}>/mo</div>
+                  </div>
+                </div>
+              </div>
+              <div onClick={function() { setBilling("yearly"); }} style={{ borderRadius: 12, padding: 12, marginBottom: 8, cursor: "pointer", border: billing === "yearly" ? "2px solid #fff" : "1px solid #2a2a2a", background: billing === "yearly" ? "#111" : "#000" }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <div>
+                    <div style={{ fontWeight: 800 }}>Pro Yearly - Save {currency.symbol}{savings}</div>
+                    <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>All Pro + Priority Support</div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontWeight: 900, fontSize: 18 }}>{currency.symbol}{currency.yearly}</div>
+                    <div style={{ fontSize: 10, color: "#888" }}>/year</div>
+                  </div>
+                </div>
+              </div>
+              <button onClick={function() { showToast("Subscribe " + currency.symbol + currency.monthly + " Monthly"); }} className="active-scale" style={{ width: "100%", background: "transparent", color: "#fff", border: "1px solid #fff", padding: 14, borderRadius: 8, fontWeight: 900, marginTop: 10 }}>Subscribe {currency.symbol}{currency.monthly} Monthly - Popular</button>
+              <button onClick={function() { showToast("Subscribe " + currency.symbol + currency.yearly + " Yearly"); }} className="active-scale" style={{ width: "100%", background: "#fff", color: "#000", border: "1px solid #fff", padding: 14, borderRadius: 8, fontWeight: 900, marginTop: 8 }}>Subscribe {currency.symbol}{currency.yearly} Yearly - Best Value</button>
+            </div>
+
+            <div style={{ background: "#000", border: "1px solid #2a2a2a", borderRadius: 12, padding: 14 }}>
+              <div style={{ fontWeight: 800, marginBottom: 12 }}>Legal & Support</div>
+              {[{ key: "privacy", icon: "🔒", title: "Privacy Policy", sub: "UK GDPR - Data protection" }, { key: "terms", icon: "📄", title: "Terms of Use", sub: "Terms & Conditions - Analyzer only" }, { key: "about", icon: "G", title: "About Gold Pro", sub: "Dark Terminal • Material Reports", white: true }].map(function(item, idx) {
+                return (
+                  <div key={item.key} onClick={function() { setModal(item.key); }} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 0", borderBottom: idx < 2 ? "1px solid #222" : "none", cursor: "pointer" }}>
+                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                      <div style={{ background: item.white ? "#fff" : "#1a1d23", color: item.white ? "#000" : "#fff", width: 36, height: 36, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900 }}>{item.icon}</div>
+                      <div>
+                        <div style={{ fontWeight: 700 }}>{item.title}</div>
+                        <div style={{ fontSize: 10, color: "#888" }}>{item.sub}</div>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 20 }}>›</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ textAlign: "center", marginTop: 16, padding: 10 }}>
+              <div style={{ fontSize: 10, color: "#555" }}>© 2025 Gold Pro • Dark Terminal • {currency.symbol}{currency.monthly}/{currency.symbol}{currency.yearly}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom nav */}
+        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#000", borderTop: "2px solid #fff", display: "flex", justifyContent: "space-around", padding: "8px 0 28px", zIndex: 99999, width: "100%" }}>
+          <div style={{ display: "flex", justifyContent: "space-around", width: "100%", maxWidth: 560, margin: "0 auto" }}>
+            {[{ id: "home", icon: "⌂", label: "Home" }, { id: "reports", icon: "📬", label: "Inbox" }, { id: "profile", icon: "👤", label: "Profile" }].map(function(item) {
+              return (
+                <button key={item.id} onClick={function() { setTab(item.id); }} className="active-scale" style={{ position: "relative", background: tab === item.id ? "rgba(255,255,255,0.05)" : "transparent", border: tab === item.id ? "1px solid #fff" : "1px solid transparent", color: tab === item.id ? "#fff" : "#888", fontWeight: 800, fontSize: 11, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minWidth: 80, flex: 1, margin: "0 4px", minHeight: 70, padding: 12, borderRadius: 12 }}>
+                  <span style={{ fontSize: 22 }}>{item.icon}</span>
+                  {item.label}
+                  {item.id === "reports" && inbox.length > 0 && (
+                    <span style={{ position: "absolute", top: 8, right: "28%", background: "#b91c1c", color: "#fff", fontSize: 9, fontWeight: 900, minWidth: 16, height: 16, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>{inbox.length > 99 ? "99+" : inbox.length}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {modal && (
+          <div onClick={function(e) { if (e.target === e.currentTarget) setModal(null); }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.9)", backdropFilter: "blur(2px)", zIndex: 100001, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+            <div style={{ background: "#000", border: "2px solid #fff", borderRadius: 14, padding: 20, width: "100%", maxWidth: 420, maxHeight: "85vh", overflowY: "auto" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
+                <div style={{ fontWeight: 800 }}>{modal === "privacy" ? "Privacy Policy - UK GDPR" : modal === "terms" ? "Terms of Use" : "About Gold Pro"}</div>
+                <button onClick={function() { setModal(null); }} className="active-scale" style={{ background: "transparent", border: "1px solid #444", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 700 }}>X</button>
+              </div>
+              {modal === "privacy" && (
+                <div style={{ fontSize: 12, color: "#ddd", lineHeight: 1.6 }}>
+                  Dark Terminal - Privacy Policy<br /><br />
+                  <b>Data Collected:</b> Full Name, Mobile Number, Email Address.<br />
+                  <b>Usage:</b> Account management, subscription {currency.symbol}{currency.monthly}/{currency.symbol}{currency.yearly}.<br />
+                  <b>Storage:</b> Reports stored locally on device only.<br />
+                  <b>No Sharing:</b> Never sell data.<br />
+                  <b>Rights:</b> Access, delete, export.<br /><br />
+                  Contact: privacy@goldpro.uk
+                </div>
+              )}
+              {modal === "terms" && (
+                <div style={{ fontSize: 12, color: "#ddd", lineHeight: 1.6 }}>
+                  Dark Terminal - Terms of Use<br /><br />
+                  <b>1. Analyzer Only:</b> Not financial advice.<br />
+                  <b>2. Subscription:</b> {currency.symbol}{currency.monthly} Monthly / {currency.symbol}{currency.yearly} Yearly.<br />
+                  <b>3. Material Reports:</b> Generated on a 30-minute cadence and delivered to your local inbox. Display only.<br />
+                  <b>4. Risk:</b> Trading involves risk.<br />
+                </div>
+              )}
+              {modal === "about" && (
+                <div style={{ fontSize: 12, color: "#ddd", textAlign: "center", lineHeight: 1.8 }}>
+                  Gold Pro - Dark Terminal<br />White & Black Edition<br /><br />
+                  • Material Reports every 30 minutes<br />
+                  • Email-style Inbox with open / delete<br />
+                  • Local storage • 30-day auto cleanup<br />
+                  • TradingView live charts • MA50<br />
+                  • English only interface<br />
+                  © 2025 • Gold Pro
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+  React.createElement(React.StrictMode, null, React.createElement(App, null))
+);
+  </script>
+</body>
+</html>
