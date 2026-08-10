@@ -1,8 +1,0 @@
-
-
-
-icon-192.png  <- لازم يصير موجود
-icon-512.png  <- لازم يصير موجود
-icon-1024.png <- لازم يصير موجود
-manifest.json
-index.html
