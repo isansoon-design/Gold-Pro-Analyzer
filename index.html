@@ -1,11 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<link rel="apple-touch-icon" href="./icon-192.PNG">
-<link rel="apple-touch-icon" sizes="512x512" href="./icon-512.PNG">
-<link rel="apple-touch-icon" sizes="1024x1024" href="./icon-1024.PNG">
-<link rel="manifest" href="./manifest.json?v=gold2">
-<style>
+<head><style>
 @font-face {
   font-family: "Optimistic";
   font-style: normal;
@@ -26,32 +21,15 @@
 :where(code, pre, kbd, samp) {
   font-family: "Optimistic Mono", ui-monospace, monospace;
 }
+</style><style>
+</style><style>
+</style><style>
 </style>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <!-- SUPER CLEAN FINAL v5 - Chart + Delivered Fixed --><style>
-@font-face {
-  font-family: "Optimistic";
-  font-style: normal;
-  font-weight: 400 600;
-  font-display: swap;
-  src: url("/fonts/OptimisticAI_VF_Optimized.woff2") format("woff2");
-}
-@font-face {
-  font-family: "Optimistic Mono";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("/fonts/OptimisticMono_W_TextRegular.woff2") format("woff2");
-}
-:where(html) {
-  font-family: "Optimistic", system-ui, sans-serif;
-}
-:where(code, pre, kbd, samp) {
-  font-family: "Optimistic Mono", ui-monospace, monospace;
-}
-@keyframes gpSpin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}} </style>
+</style>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#1c1c1e" />
@@ -401,11 +379,11 @@ async function gpSupportSend(text, profile, fromRole) {
 
   // 1) Try your server via HTTPS proxy (non-blocking background)
   try {
-    var serverDirect = API_BASE + "/support/send";
+    var serverDirect = "http://162.55.218.11:3000/api/support/send";
     var proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(serverDirect);
-    safeFetch(proxyUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }).catch(function(){});
+    fetch(proxyUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }).catch(function(){});
     // also try direct for http pages
-    safeFetch(serverDirect, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }).catch(function(){});
+    fetch(serverDirect, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }).catch(function(){});
   } catch(eS) {}
 
   // 2) Try Firebase (also non-blocking)
@@ -447,9 +425,9 @@ async function gpSupportLoadMessages(userId) {
   var uid = userId || gpSupportUserId();
   // try server
   try {
-    var directMsg = API_BASE + "/support/messages/" + encodeURIComponent(uid);
+    var directMsg = "http://162.55.218.11:3000/api/support/messages/" + encodeURIComponent(uid);
     var proxyMsg = "https://corsproxy.io/?" + encodeURIComponent(directMsg);
-    var r = await safeFetch(proxyMsg);
+    var r = await fetch(proxyMsg);
     if (r.ok) {
       var j = await r.json();
       if (j && j.messages && j.messages.length) {
@@ -469,9 +447,9 @@ async function gpSupportLoadMessages(userId) {
 
 async function gpSupportListThreads() {
   try {
-    var directChats = API_BASE + "/support/chats";
+    var directChats = "http://162.55.218.11:3000/api/support/chats";
     var proxyChats = "https://corsproxy.io/?" + encodeURIComponent(directChats);
-    var r = await safeFetch(proxyChats);
+    var r = await fetch(proxyChats);
     if (r.ok) {
       var j = await r.json();
       if (j && j.chats) {
@@ -558,6 +536,42 @@ async function gpRegisterFcm() {
     return null;
   }
 }
+
+
+/** FCM test helper — open browser console and run: await gpFcmDebug() */
+async function gpFcmDebug() {
+  var out = {
+    notificationApi: typeof Notification !== "undefined",
+    permission: (typeof Notification !== "undefined" ? Notification.permission : "n/a"),
+    serviceWorker: ("serviceWorker" in navigator),
+    messagingReady: !!(typeof gpMessaging !== "undefined" && gpMessaging),
+    token: (typeof gpFcmToken !== "undefined" ? gpFcmToken : null),
+    vapidSet: !!(typeof GP_FCM_VAPID !== "undefined" && GP_FCM_VAPID)
+  };
+  try {
+    if (!out.messagingReady && typeof gpRegisterFcm === "function") {
+      await gpRegisterFcm();
+      out.messagingReady = !!(typeof gpMessaging !== "undefined" && gpMessaging);
+      out.token = (typeof gpFcmToken !== "undefined" ? gpFcmToken : null);
+      out.permission = (typeof Notification !== "undefined" ? Notification.permission : "n/a");
+    }
+  } catch (e) {
+    out.registerError = (e && e.message) || String(e);
+  }
+  try {
+    if (out.permission === "granted" && typeof gpNotify === "function") {
+      await gpNotify("Gold Pro · FCM test", "Local test notification — educational only.", "gp-fcm-debug", { pattern: true });
+      out.localNotify = "sent";
+    } else {
+      out.localNotify = "skipped (permission=" + out.permission + ")";
+    }
+  } catch (e2) {
+    out.localNotify = "error: " + ((e2 && e2.message) || String(e2));
+  }
+  console.log("[Gold Pro FCM Debug]", out);
+  return out;
+}
+try { window.gpFcmDebug = gpFcmDebug; } catch (eW) {}
 
 /* Foreground FCM messages — pattern payloads preferred; still surface title if notification present */
 try {
@@ -663,7 +677,7 @@ const REF_PRICE = {
 
 /* Yahoo symbols aligned with TradingView market prices */
 const YAHOO_SYMBOL = {
-  XAUUSD: "GC=F", GOLD: "GC=F", XAGUSD: "SI=F", SILVER: "SI=F",
+  XAUUSD: "XAUUSD=X", GOLD: "XAUUSD=X", XAGUSD: "XAGUSD=X", SILVER: "XAGUSD=X",
   WTIUSD: "CL=F", WTI: "CL=F", USOIL: "CL=F",
   GBPUSD: "GBPUSD=X", EURUSD: "EURUSD=X", USDJPY: "USDJPY=X",
   GBPJPY: "GBPJPY=X", EURJPY: "EURJPY=X",
@@ -774,94 +788,46 @@ const LEGAL_PRIVACY = `═══════════════════
 
 Last Updated: August 2026
 
-1. INTRODUCTION
-  Gold Pro Analyzer ("we", "our", or "us") respects your privacy. This 
-  Privacy Policy explains how we collect, use, store, and 
-  protect your personal information when you use our mobile 
-  application.
+1. INTRODUCTION & PURPOSE
+  Gold Pro Analyzer is a LEARNING APPLICATION: MARKET ANALYZER ONLY.
+  It is an educational tool for studying market structure on gold and selected instruments.
+  It does NOT provide financial advice, investment recommendations, brokerage services, or trading signals.
+  It is for users 18+ for educational and informational purposes ONLY.
 
 2. INFORMATION WE COLLECT
-  a) Account Information: Email address, name (if provided), 
-     and subscription status.
-  b) Usage Data: App interactions, features accessed, report 
-     views, and session duration (collected via analytics tools).
-  c) Device Information: Device type, operating system, unique 
-     device identifiers, and IP address.
-  d) Market Data Preferences: Watchlists, alert settings, and 
-     favorite assets (stored locally and/or in the cloud).
-  e) Crash Data: Anonymous error logs to help us improve 
-     stability.
+  a) Account Information: Email (optional), display name (optional).
+  b) Preferences: Watchlist, favorites, theme (stored locally on device).
+  c) Usage: Reports generated, stored locally on this device only.
+  WE DO NOT COLLECT bank details, trading credentials, or financial accounts.
 
-  WE DO NOT COLLECT:
-  - Financial account numbers or bank details;
-  - Trading account credentials;
-  - Personal financial information.
+3. HOW DATA IS STORED
+  - All personal data (profile, inbox reports, favorites) stays ON THIS DEVICE ONLY (localStorage).
+  - We do NOT upload personal data to company servers. See code: gpCloudSaveProfile returns false.
+  - Live reports are fetched from Gold Pro servers and cached locally only.
 
-3. HOW WE USE YOUR INFORMATION
-  - To provide and maintain the application service;
-  - To process subscription payments via Apple App Store and 
-    Google Play;
-  - To send service-related notifications (subscription renewals, 
-    app updates);
-  - To analyze app usage and improve features;
-  - To diagnose technical issues.
+4. DATA RETENTION - 35 DAY AUTO DELETE
+  - Reports auto-delete after 35 days on this device.
+  - If user does not log in / open app for 35 days after last activity, all local data is considered expired.
+  - On next app start after 35 days of inactivity, all cached reports and preferences are deleted automatically.
+  - Anonymous analytics (if enabled) may be retained longer for statistics only.
 
-  WE DO NOT:
-  - Sell your personal data to third parties;
-  - Use your data for targeted advertising of financial products;
-  - Share identifiable data with unauthorized third parties.
+5. USER CAN DELETE ALL HIS DATA ANYTIME
+  - Inside app: Profile > PRIVACY & DATA > Delete all data on this device (one tap deletes all gp_ localStorage keys).
+  - Inside inbox: Delete single report or Delete ALL reports.
+  - Contact us at support@goldproanalyzer.com to request account deletion and we delete within 7 days.
+  - You have full control: you can delete all your data instantly without contacting support.
 
-4. DATA STORAGE & SECURITY
-  - Personal data is stored on secure cloud servers with 
-    encryption in transit and at rest.
-  - We implement industry-standard security measures to protect 
-    your information.
-  - While we take reasonable precautions, no internet 
-    transmission is 100% secure.
+6. THIRD PARTIES
+  - Apple App Store / Google Play for subscriptions (if enabled).
+  - Firebase Cloud Messaging for push (token only, no personal data).
+  - Market data providers for price feeds.
 
-5. THIRD-PARTY SERVICES
-  We use the following third-party services:
-  - Apple App Store / Google Play (subscription processing);
-  - Firebase / Analytics providers (anonymous usage data);
-  - Market data providers (financial data feeds).
+7. CHILDREN
+  Not for users under 18. We do not knowingly collect data from minors.
 
-  These services operate under their own privacy policies. We 
-  encourage you to review them.
-
-6. YOUR RIGHTS
-  Depending on your jurisdiction, you may have the right to:
-  - Access the personal data we hold about you;
-  - Request correction or deletion of your data;
-  - Object to certain processing activities;
-  - Withdraw consent where applicable.
-
-  To exercise these rights, contact us at: support@goldproanalyzer.com
-
-7. DATA RETENTION
-  We retain your personal information only for as long as 
-  necessary to provide the service or comply with legal 
-  obligations. Anonymous analytics data may be retained longer 
-  for statistical purposes.
-
-8. CHILDREN'S PRIVACY
-  Gold Pro Analyzer is not intended for users under the age of 18. We 
-  do not knowingly collect personal information from minors. If 
-  you believe a child has provided us with personal data, please 
-  contact us immediately.
-
-9. INTERNATIONAL TRANSFERS
-  Your data may be transferred to and processed in countries 
-  outside your jurisdiction. We ensure appropriate safeguards 
-  are in place to protect your data during such transfers.
-
-10. CHANGES TO THIS POLICY
-   We may update this Privacy Policy periodically. We will 
-   notify you of significant changes via the app or email. 
-   Continued use after updates constitutes acceptance.
-
-11. CONTACT US
-   If you have questions about this Privacy Policy, contact us:
-   Email: support@goldproanalyzer.com
+8. CONTACT
+  Email: support@goldproanalyzer.com
+  Type: Educational market analyzer only. Not financial advice.
 `;
 
 const LEGAL_DISCLAIMER = `Gold Pro Analyzer is for educational and informational purposes only. It does not provide financial advice, investment recommendations, or trading signals. Past performance does not guarantee future results. Market data may be delayed. You are solely responsible for your trading and investment decisions.`;
@@ -978,8 +944,8 @@ function persistFavoritesList(list) {
   return next;
 }
 /* Auto-delete reports after 7 days on this device only */
-const REPORT_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
-const THIRTY_DAYS = REPORT_RETENTION_MS; /* legacy alias — now 7 days */
+const REPORT_RETENTION_MS = 35 * 24 * 60 * 60 * 1000; // 35 days auto-delete as per privacy
+const THIRTY_DAYS = REPORT_RETENTION_MS; // 35 days
 
 /* WebSocket — auto resolve (localStorage → localhost → host → production) */
 function resolveWsUrl() {
@@ -1002,38 +968,73 @@ const WS_RECONNECT_MS = 4000;
 function resolveApiBase() {
   try {
     var saved = typeof localStorage !== "undefined" && localStorage.getItem("gp_api_base");
-    if (saved && String(saved).trim() && saved.indexOf("file:") !== 0 && saved.indexOf("162.55.218.11") === -1 && saved.indexOf("http://") !== 0) return String(saved).trim();
+    if (saved && String(saved).trim() && saved.indexOf("file:") !== 0) return String(saved).trim();
   } catch (e0) {}
-  // If on github.io, don't use location.origin - use main API
   try {
-    if (typeof location !== "undefined" && location.hostname && location.hostname.indexOf("github.io") !== -1) {
-      return "https://goldproanalyzer.com/api";
-    }
-    // If on localhost or file, use main API too
-    if (typeof location !== "undefined" && (location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.protocol === "file:")) {
-      return "https://goldproanalyzer.com/api";
-    }
-    if (typeof location !== "undefined" && location.protocol !== "file:" && location.hostname !== "goldproanalyzer.com" && location.hostname.indexOf("github.io") === -1) {
-      // For custom domain, try same origin first but will fallback
+    if (typeof location !== "undefined" && location.protocol !== "file:") {
       return location.origin + "/api";
     }
   } catch (e1) {}
   return "https://goldproanalyzer.com/api";
 }
-
-// Non-blocking fetch wrapper to prevent Safari hang
-function safeFetch(url, opts, timeout){
-  timeout = timeout || 8000;
-  var controller;
-  try { controller = new AbortController(); } catch(e) { controller = null; }
-  var options = opts || {};
-  if(controller){
-    options.signal = controller.signal;
-    setTimeout(function(){ try{ controller.abort(); }catch(e){} }, timeout);
-  }
-  return fetch(url, options);
-}
 const API_BASE = resolveApiBase();
+
+// 35-day auto-delete: App + Server (as per privacy policy)
+// 1) Track last active
+// 2) If >35 days, delete local + try delete server data
+var GP_35D_MS = 35 * 24 * 60 * 60 * 1000;
+try {
+  var lastActive = parseInt(localStorage.getItem("gp_last_active") || "0", 10);
+  var nowMs = Date.now();
+  var isExpired = lastActive && (nowMs - lastActive) > GP_35D_MS;
+  
+  // Always update last active
+  try{ localStorage.setItem("gp_last_active", String(nowMs)); localStorage.setItem("gp_last_login", String(nowMs)); }catch(e){}
+  try{ localStorage.setItem("gp_last_login", String(nowMs)); }catch(e){}
+
+  // If expired -> delete everything
+  if (isExpired) {
+    // Local
+    Object.keys(localStorage).forEach(function(k){ if(k.indexOf("gp_")===0 && k!=="gp_auto_deleted_35d") try{ localStorage.removeItem(k);}catch(e){} });
+    try{ Object.keys(sessionStorage).forEach(function(k){ if(k.indexOf("gp_")===0) try{ sessionStorage.removeItem(k);}catch(e){} }); }catch(eS){}
+    try{ localStorage.setItem("gp_auto_deleted_35d", String(nowMs)); }catch(e){}
+    try{ localStorage.setItem("gp_last_active", String(nowMs)); localStorage.setItem("gp_last_login", String(nowMs)); }catch(e){}
+
+    // Server: try delete Firestore user data
+    try {
+      var uid35 = (function(){ try{ var v=localStorage.getItem("gp_support_uid"); if(v) return v; var u="user_"+Math.random().toString(36).slice(2,10); localStorage.setItem("gp_support_uid", u); return u; }catch(e){ return null; } })();
+      // Will attempt in background after Firebase ready
+      window.__gpShouldDeleteServer35d = true;
+      window.__gpDeleteUid35d = uid35;
+    } catch(eUid){}
+
+    // Server: call your API to delete server data
+    try {
+      var delPayload = { action: "auto_delete_35d", reason: "35 days inactive", timestamp: nowMs, uid: window.__gpDeleteUid35d || "unknown" };
+      fetch("https://goldproanalyzer.com/api/user/delete", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(delPayload)}).catch(function(){});
+      fetch("https://corsproxy.io/?" + encodeURIComponent("https://goldproanalyzer.com/api/user/delete"), { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(delPayload)}).catch(function(){});
+    } catch(eDelApi){}
+  }
+} catch(e35){}
+
+// Background server delete after Firebase loads
+setTimeout(function(){
+  try {
+    if (!window.__gpShouldDeleteServer35d) return;
+    if (typeof firebase === "undefined" || !firebase.firestore) return;
+    var db = firebase.firestore();
+    var uid = window.__gpDeleteUid35d || localStorage.getItem("gp_support_uid");
+    if (!uid) return;
+    // Delete support chat thread
+    try{ db.collection("supportChats").doc(uid).delete().catch(function(){}); }catch(e1){}
+    try{ db.collection("supportChats").doc(uid).collection("messages").get().then(function(snap){ snap.forEach(function(d){ d.ref.delete().catch(function(){}); }); }).catch(function(){}); }catch(e2){}
+    // Delete FCM tokens
+    try{ db.collection("fcmTokens").doc(uid).delete().catch(function(){}); }catch(e3){}
+    // Mark deleted
+    try{ db.collection("userMeta").doc(uid).set({ deletedAt: Date.now(), reason: "35d_auto_delete", autoDeleted: true }, {merge:true}).catch(function(){}); }catch(e4){}
+  } catch(eBg){}
+}, 4000);
+
 
 function detectCurrency() {
   try {
@@ -1122,8 +1123,33 @@ function pricePrefix(symbol) {
   return "";
 }
 
+/* Global network timeout — prevents Generate / report open from hanging */
+function gpWithTimeout(promise, ms) {
+  return new Promise(function(resolve, reject) {
+    var done = false;
+    var t = setTimeout(function() {
+      if (done) return;
+      done = true;
+      reject(new Error("timeout"));
+    }, ms || 8000);
+    Promise.resolve(promise).then(function(v) {
+      if (done) return;
+      done = true;
+      clearTimeout(t);
+      resolve(v);
+    }).catch(function(err) {
+      if (done) return;
+      done = true;
+      clearTimeout(t);
+      reject(err);
+    });
+  });
+}
+var __gpTvPriceCache = {};
+
 /* Live mid price from the SAME TradingView symbol used by the chart — keeps banner = chart */
 async function fetchTvLivePrice(symbol) {
+  var symKey = (typeof normalizeSymbol === "function" ? normalizeSymbol(symbol) : String(symbol || "").toUpperCase()) || String(symbol || "").toUpperCase();
   var tv = tvSymbolFor(symbol);
   function parseTvJson(d) {
     if (!d || d.code) return null;
@@ -1137,45 +1163,61 @@ async function fetchTvLivePrice(symbol) {
     var ch = (d.ch != null && isFinite(Number(d.ch))) ? Number(d.ch) : null;
     return { price: lp, changePct: chp, change: ch, source: "tradingview", tvSymbol: tv };
   }
-  /* 1) TradingView scanner — same family as chart widget */
-  var fields = "lp,bid,ask,ch,chp,open_price,prev_close_price,description";
+  function remember(parsed) {
+    if (parsed && parsed.price > 0) {
+      try { __gpTvPriceCache[symKey] = { t: Date.now(), price: parsed.price, changePct: parsed.changePct, change: parsed.change, source: "tradingview", tvSymbol: tv }; } catch (eR) {}
+    }
+    return parsed;
+  }
+  try {
+    var hit = __gpTvPriceCache[symKey];
+    if (hit && hit.price > 0 && (Date.now() - hit.t) < 45000) {
+      return { price: hit.price, changePct: hit.changePct, change: hit.change, source: "tradingview", tvSymbol: tv };
+    }
+  } catch (eH) {}
+  var fields = "lp,bid,ask,ch,chp";
   var urls = [
-    "https://scanner.tradingview.com/symbol?symbol=" + encodeURIComponent(tv) + "&fields=" + fields,
-    "https://scanner.tradingview.com/symbol?symbol=" + encodeURIComponent(tv) + "&fields=lp,bid,ask,chp"
+    "https://scanner.tradingview.com/symbol?symbol=" + encodeURIComponent(tv) + "&fields=" + fields
   ];
   for (var u = 0; u < urls.length; u++) {
     try {
-      var res = await fetch(urls[u], { method: "GET", cache: "no-store", mode: "cors" });
-      if (res.ok) {
+      var res = await gpWithTimeout(fetch(urls[u], { method: "GET", cache: "no-store", mode: "cors" }), 4500);
+      if (res && res.ok) {
         var d = await res.json();
         var parsed = parseTvJson(d);
-        if (parsed) return parsed;
+        if (parsed) return remember(parsed);
       }
     } catch (e) {}
+    try {
+      var proxied = "https://corsproxy.io/?" + encodeURIComponent(urls[u]);
+      var resP = await gpWithTimeout(fetch(proxied, { method: "GET", cache: "no-store" }), 5000);
+      if (resP && resP.ok) {
+        var dP = await resP.json();
+        var parsedP = parseTvJson(dP);
+        if (parsedP) return remember(parsedP);
+      }
+    } catch (eP) {}
   }
-  /* 2) Own backend proxy (if you add /api/quote on goldproanalyzer.com) — same numbers as chart when wired */
   try {
     var api = (typeof API_BASE !== "undefined" ? API_BASE : "") + "/quote?symbol=" + encodeURIComponent(tv);
-    var res2 = await fetch(api, { method: "GET", cache: "no-store" });
-    if (res2.ok) {
+    var res2 = await gpWithTimeout(fetch(api, { method: "GET", cache: "no-store" }), 4000);
+    if (res2 && res2.ok) {
       var d2 = await res2.json();
       var p2 = null;
       if (d2 && d2.price != null) p2 = Number(d2.price);
       else if (d2 && d2.lp != null) p2 = Number(d2.lp);
-      else if (d2 && d2.data && d2.data.lp != null) p2 = Number(d2.data.lp);
-      if (p2 > 0) {
-        return {
-          price: p2,
-          changePct: d2.changePct != null ? Number(d2.changePct) : (d2.chp != null ? Number(d2.chp) : null),
-          change: d2.change != null ? Number(d2.change) : null,
-          source: "tradingview",
-          tvSymbol: tv
-        };
-      }
+      if (p2 > 0) return remember({ price: p2, changePct: d2.changePct != null ? Number(d2.changePct) : null, change: null, source: "tradingview", tvSymbol: tv });
     }
   } catch (eApi) {}
+  try {
+    var stale = __gpTvPriceCache[symKey];
+    if (stale && stale.price > 0 && (Date.now() - stale.t) < 600000) {
+      return { price: stale.price, changePct: stale.changePct, change: stale.change, source: "tradingview", tvSymbol: tv };
+    }
+  } catch (eS) {}
   return null;
 }
+
 
 function aggregateTo4h(rows) {
   if (!rows || rows.length < 4) return rows || [];
@@ -1259,7 +1301,7 @@ async function fetchCandles(symbol, tf) {
         var rows = await parseYahoo(urls[u]);
         if (rows.length > 10) {
           var lastC = rows[rows.length - 1].close;
-          if (!ref || (lastC > ref * 0.35 && lastC < ref * 2.8)) {
+          if (!ref || (lastC > ref * 0.20 && lastC < ref * 4.0)) {
             rows._source = "yahoo";
             try { __gpCandleCache[cacheKey] = { t: Date.now(), rows: rows }; } catch (eC1) {}
             return rows;
@@ -1735,114 +1777,94 @@ function gpResolveVapid() {
 function detectMA50Structure(candles, ma50, priceNum) {
   if (!candles || candles.length < 10 || !ma50) return null;
   var n = candles.length;
-  var last = candles[n - 1];
-  var lastMa = ma50[n - 1];
-  if (lastMa == null || !(priceNum > 0)) return null;
-  var above = priceNum > lastMa;
-  var bullCloses = [];
-  var bearCloses = [];
-  for (var i = Math.max(0, n - 30); i < n; i++) {
-    if (ma50[i] == null) continue;
-    var c = candles[i];
-    if (gpIsBull(c) && Number(c.close) > ma50[i]) bullCloses.push(i);
-    if (gpIsBear(c) && Number(c.close) < ma50[i]) bearCloses.push(i);
+  var ma_n1 = ma50[n - 1];
+  var ma_n2 = ma50[n - 2];
+  var ma_n3 = ma50[n - 3];
+  if (ma_n1 == null || ma_n2 == null || ma_n3 == null) return null;
+  if (!(priceNum > 0)) return null;
+  var c_n1 = candles[n - 1];
+  var c_n2 = candles[n - 2];
+  var c_n3 = candles[n - 3];
+  if (!c_n1 || !c_n2 || !c_n3) return null;
+  var wasBelow = Number(c_n3.close) < Number(ma_n3);
+  var firstGreenAbove = gpIsBull(c_n2) && Number(c_n2.close) > Number(ma_n2);
+  var secondGreenAbove = gpIsBull(c_n1) && Number(c_n1.close) > Number(ma_n1);
+  if (wasBelow && firstGreenAbove && secondGreenAbove) {
+    return {
+      module: "ma50",
+      bias: "bullish",
+      stars: 1,
+      title: "MA50 Structure",
+      detail: "Market crossed from below 50 MA. First green closed above MA50, second green closed above MA50 - signal on 2nd green close.",
+      notifyBody: "MA50 Structure: Second green candle closed above 50 MA.\n1st green above 50, 2nd green above 50 = signal on 2nd close. Cross from below."
+    };
   }
-  if (above && bullCloses.length >= 2) {
-    /* Guide: two closed bullish candles above MA50 (not required consecutive) + price above MA50 */
-    var crossedUp = false;
-    for (var j = Math.max(1, n - 60); j < n; j++) {
-      if (ma50[j - 1] != null && ma50[j] != null) {
-        if (Number(candles[j - 1].close) <= Number(ma50[j - 1]) && Number(candles[j].close) > Number(ma50[j])) {
-          crossedUp = true; break;
-        }
-      }
-    }
-    /* Also accept: last 2 closed candles both bullish and both fully above MA50 */
-    var c1 = candles[n - 1], c2 = candles[n - 2];
-    var ma1 = ma50[n - 1], ma2 = ma50[n - 2];
-    var twoAbove = (
-      ma1 != null && ma2 != null &&
-      gpIsBull(c1) && gpIsBull(c2) &&
-      Number(c1.close) > Number(ma1) && Number(c1.open) > Number(ma1) &&
-      Number(c2.close) > Number(ma2) && Number(c2.open) > Number(ma2)
-    );
-    if (crossedUp || twoAbove || (bullCloses.length >= 2 && priceNum > lastMa)) {
-      return {
-        module: "ma50",
-        bias: "bullish",
-        stars: 1,
-        title: "MA50 Structure",
-        detail: "Two closed candles above MA50. Price context: Currently above 50-period average.",
-        notifyBody: "MA50 Structure: Two closed candles above MA50.\nPrice context: Currently above 50-period average."
-      };
-    }
-  }
-  if (!above && bearCloses.length >= 2) {
-    var crossedDown = false;
-    for (var k = Math.max(1, n - 40); k < n; k++) {
-      if (ma50[k - 1] != null && ma50[k] != null) {
-        if (candles[k - 1].close > ma50[k - 1] && candles[k].close < ma50[k]) { crossedDown = true; break; }
-      }
-    }
-    if (crossedDown || (bearCloses.length >= 3 && priceNum < lastMa * 0.9995)) {
-      return {
-        module: "ma50",
-        bias: "bearish",
-        stars: 1,
-        title: "MA50 Structure",
-        detail: "Two closed candles below MA50. Price context: Currently below 50-period average.",
-        notifyBody: "MA50 Structure: Two closed candles below MA50.\nPrice context: Currently below 50-period average."
-      };
-    }
+  var wasAbove = Number(c_n3.close) > Number(ma_n3);
+  var firstRedBelow = gpIsBear(c_n2) && Number(c_n2.close) < Number(ma_n2);
+  var secondRedBelow = gpIsBear(c_n1) && Number(c_n1.close) < Number(ma_n1);
+  if (wasAbove && firstRedBelow && secondRedBelow) {
+    return {
+      module: "ma50",
+      bias: "bearish",
+      stars: 1,
+      title: "MA50 Structure",
+      detail: "Market crossed from above 50 MA. First red closed below MA50, second red closed below MA50 - signal on 2nd red close.",
+      notifyBody: "MA50 Structure: Second red candle closed below 50 MA.\n1st red below 50, 2nd red below 50 = signal on 2nd close. Cross from above."
+    };
   }
   return null;
 }
 
-/* MODULE 2 — Engulfing Candle Structure */
 function detectEngulfing(candles, ma50, priceNum) {
-  if (!candles || candles.length < 8) return null;
+  if (!candles || candles.length < 10) return null;
   var n = candles.length;
   var cur = candles[n - 1];
   var prev = candles[n - 2];
-  var lastMa = ma50 && ma50[n - 1];
-  if (lastMa == null) return null;
+  if (!cur || !prev) return null;
   var curBody = gpBody(cur);
   var prevBody = gpBody(prev);
   if (!(prevBody > 0) || !(curBody > 0)) return null;
   var ratio = curBody / prevBody;
-  if (ratio < 2.2) return null;
+  if (ratio < 3.5) return null;
   var maxPrev5 = 0;
   for (var i = n - 6; i < n - 1; i++) {
-    if (i >= 0) maxPrev5 = Math.max(maxPrev5, gpBody(candles[i]));
+    if (i >= 0 && candles[i]) maxPrev5 = Math.max(maxPrev5, gpBody(candles[i]));
   }
   if (curBody <= maxPrev5) return null;
-  var above = priceNum > lastMa;
-  /* Bearish engulfing against bullish context */
-  if (above && gpIsBear(cur)) {
-    return {
-      module: "engulfing",
-      bias: "bearish",
-      stars: 1,
-      ratio: Math.round(ratio * 10) / 10,
-      title: "Engulfing Structure",
-      detail: "Bearish candle engulfing previous body. Strength ratio: " + (Math.round(ratio * 10) / 10) + "x. Largest in last 5 candles. Context: Price above MA50 — potential reversal structure.",
-      notifyBody: "Engulfing Structure: Bearish candle engulfing previous body.\nStrength ratio: " + (Math.round(ratio * 10) / 10) + "x previous candle body.\nRelative size: Largest in last 5 candles.\nContext: Price above MA50. Pattern represents potential reversal structure."
-    };
+  var bearCount = 0, bullCount = 0;
+  for (var j = n - 7; j < n - 2; j++) {
+    if (j >= 0 && candles[j]) {
+      if (gpIsBear(candles[j])) bearCount++;
+      else if (gpIsBull(candles[j])) bullCount++;
+    }
   }
-  /* Bullish engulfing against bearish context */
-  if (!above && gpIsBull(cur)) {
+  var isDowntrend = bearCount >= 3 || (candles[n-3] && candles[n-6] && Number(candles[n-3].close) < Number(candles[n-6].close));
+  var isUptrend = bullCount >= 3 || (candles[n-3] && candles[n-6] && Number(candles[n-3].close) > Number(candles[n-6].close));
+  if (gpIsBull(cur) && gpIsBear(prev) && isDowntrend) {
     return {
       module: "engulfing",
       bias: "bullish",
       stars: 1,
       ratio: Math.round(ratio * 10) / 10,
       title: "Engulfing Structure",
-      detail: "Bullish candle engulfing previous body. Strength ratio: " + (Math.round(ratio * 10) / 10) + "x. Largest in last 5 candles. Context: Price below MA50 — potential reversal structure.",
-      notifyBody: "Engulfing Structure: Bullish candle engulfing previous body.\nStrength ratio: " + (Math.round(ratio * 10) / 10) + "x previous candle body.\nRelative size: Largest in last 5 candles.\nContext: Price below MA50. Pattern represents potential reversal structure."
+      detail: "Bullish engulfing against downtrend. Green " + (Math.round(ratio*10)/10) + "x larger than previous red. Largest in last 5. NO MA50.",
+      notifyBody: "Engulfing Structure: Bullish engulfing against downtrend.\nGreen " + (Math.round(ratio*10)/10) + "x larger than previous red.\nLargest in last 5 candles.\nOpposite red trend - PURE PRICE ACTION."
+    };
+  }
+  if (gpIsBear(cur) && gpIsBull(prev) && isUptrend) {
+    return {
+      module: "engulfing",
+      bias: "bearish",
+      stars: 1,
+      ratio: Math.round(ratio * 10) / 10,
+      title: "Engulfing Structure",
+      detail: "Bearish engulfing against uptrend. Red " + (Math.round(ratio*10)/10) + "x larger than previous green. Largest in last 5. NO MA50.",
+      notifyBody: "Engulfing Structure: Bearish engulfing against uptrend.\nRed " + (Math.round(ratio*10)/10) + "x larger than previous green.\nLargest in last 5 candles.\nOpposite green trend - PURE PRICE ACTION."
     };
   }
   return null;
 }
+
 
 /* MODULE 3 — Dynamic Price Cluster */
 function detectDynamicCluster(candles, priceNum) {
@@ -2190,11 +2212,12 @@ async function generateServerReport(material, profile, reportNumber, genOpts) {
   var patternTf = String(genOpts.tf || genOpts.timeframe || "4h").toLowerCase();
   /* 1) TradingView live price FIRST — same source as home chart/banner */
   var tvLive = null;
-  try { tvLive = await fetchTvLivePrice(symbol); } catch (eTv) { tvLive = null; }
+  try { tvLive = await gpWithTimeout(fetchTvLivePrice(symbol), 7000); } catch (eTv) { tvLive = null; }
   var candleTf = (patternTf.indexOf("4") >= 0) ? "4h" : ((patternTf.indexOf("1") >= 0 || patternTf.indexOf("60") >= 0) ? "1h" : "30");
-  var candles = await fetchCandles(symbol, candleTf);
+  var candles = [];
+  try { candles = await gpWithTimeout(fetchCandles(symbol, candleTf), 9000); } catch (eC0) { candles = []; }
   if (!candles || !candles.length) {
-    try { candles = await fetchCandles(symbol, "30"); } catch (eFb) { candles = []; }
+    try { candles = await gpWithTimeout(fetchCandles(symbol, "30"), 7000); } catch (eFb) { candles = []; }
   }
   if (!candles || !candles.length) candles = [];
   var last = candles.length ? candles[candles.length - 1] : null;
@@ -2203,13 +2226,12 @@ async function generateServerReport(material, profile, reportNumber, genOpts) {
   var avg = recent.length ? recent.reduce(function(a, b) { return a + b; }, 0) / recent.length : 0;
   var priceNum = last ? last.close : avg;
   var refP = REF_PRICE[symbol] || 0;
-  var priceSource = "yahoo/candles";
-  /* Align candle series to TV live price so S/R tests match the chart the user sees */
+  var priceSource = (candles._source && String(candles._source).indexOf("yahoo") >= 0) ? "yahoo/candles" : (candles._source || "candles");
   if (tvLive && tvLive.price > 0) {
     var tvP = Number(tvLive.price);
     if (last && last.close > 0) {
       var scale = tvP / last.close;
-      if (scale > 0.90 && scale < 1.12) {
+      if (scale > 0.75 && scale < 1.35) {
         candles = candles.map(function(c) {
           return { t: c.t, open: c.open * scale, high: c.high * scale, low: c.low * scale, close: c.close * scale };
         });
@@ -2220,17 +2242,11 @@ async function generateServerReport(material, profile, reportNumber, genOpts) {
     }
     priceNum = tvP;
     priceSource = "tradingview";
-  } else {
-    var isFx = symbol === "GBPUSD" || symbol === "EURUSD" || symbol === "USDJPY" || symbol === "GBPJPY" || symbol === "EURJPY";
-    var isMetal = symbol === "XAUUSD" || symbol === "GOLD" || symbol === "XAGUSD" || symbol === "SILVER";
-    var isOil = symbol === "WTIUSD" || symbol === "WTI" || symbol === "USOIL";
-    var loMul = isFx ? 0.90 : (isMetal ? 0.85 : (isOil ? 0.70 : 0.40));
-    var hiMul = isFx ? 1.10 : (isMetal ? 1.20 : (isOil ? 1.35 : 2.50));
-    var liveOk = isFinite(priceNum) && priceNum > 0 && !(refP > 0 && (priceNum < refP * loMul || priceNum > refP * hiMul));
-    if (!liveOk) {
-      priceNum = refP > 0 ? refP : priceNum;
-      priceSource = "ref";
-    }
+  } else if (isFinite(priceNum) && priceNum > 0) {
+    priceSource = priceSource || "yahoo/candles";
+  } else if (refP > 0) {
+    priceNum = refP;
+    priceSource = "ref";
   }
   /* S/R from REAL candle extremes of last 48 bars — levels price actually traded */
   var win = candles.slice(-48);
@@ -2276,7 +2292,7 @@ async function generateServerReport(material, profile, reportNumber, genOpts) {
   var structure = buildStructureLabel(trend, rangePct);
   var bias = trend.indexOf("Bull") >= 0 ? "Bullish" : trend.indexOf("Bear") >= 0 ? "Bearish" : "Neutral";
   var weekly = [];
-  try { weekly = await fetchWeeklyHistory(symbol); } catch (eW) { weekly = []; }
+  try { weekly = await gpWithTimeout(fetchWeeklyHistory(symbol), 4000); } catch (eW) { weekly = []; }
   var weeklyMeta = { synthetic: false };
   if ((!weekly || weekly.length < 10) && candles && candles.length > 10) {
     weeklyMeta.synthetic = true;
@@ -3161,6 +3177,7 @@ function App() {
   var _o = useState(true), online = _o[0], setOnline = _o[1];
   var _m = useState(null), modal = _m[0], setModal = _m[1];
   var _cmsg = useState(""), contactMsg = _cmsg[0], setContactMsg = _cmsg[1];
+  var _cs = useState(false), contactSending = _cs[0], setContactSending = _cs[1];
   var _cimg = useState(null), contactImg = _cimg[0], setContactImg = _cimg[1];
   var _sth = useState([]), supportThread = _sth[0], setSupportThread = _sth[1];
 var _sMenu = useState(null), supportMenuId = _sMenu[0], setSupportMenuId = _sMenu[1];
@@ -3169,6 +3186,7 @@ var _sMenu = useState(null), supportMenuId = _sMenu[0], setSupportMenuId = _sMen
   var _or = useState(null), openReportId = _or[0], setOpenReportId = _or[1];
   var _rm = useState("1h"), reportMode = _rm[0], setReportMode = _rm[1];
   var _rt = useState("light"), reportTheme = _rt[0], setReportTheme = _rt[1];
+  var _shareOpen = useState(false), shareOpen = _shareOpen[0], setShareOpen = _shareOpen[1];
   var _rg = useState(false), reportGenerating = _rg[0], setReportGenerating = _rg[1];
   var _sr = useState(null), srPanel = _sr[0], setSrPanel = _sr[1];
   var _srLoading = useState(false), srLoading = _srLoading[0], setSrLoading = _srLoading[1];
@@ -3345,7 +3363,7 @@ useEffect(function() {
     setLivePriceSource("—");
     async function loadPrice() {
       try {
-        var tvq = await fetchTvLivePrice(active);
+        var tvq = await gpWithTimeout(fetchTvLivePrice(active), 6000);
         if (!cancelled && tvq && tvq.price > 0) {
           liveTvRef.current = { price: tvq.price, source: "tradingview" };
           setLivePrice(tvq.price);
@@ -3361,7 +3379,7 @@ useEffect(function() {
         return;
       }
       try {
-        var candles = await fetchCandles(active, "30");
+        var candles = await gpWithTimeout(fetchCandles(active, "30"), 8000);
         if (cancelled || !candles || !candles.length) return;
         var last = candles[candles.length - 1].close;
         var prev = candles.length > 1 ? candles[candles.length - 2].close : last;
@@ -3413,7 +3431,13 @@ useEffect(function() {
   useEffect(function() { try { localStorage.setItem("gp_profile", JSON.stringify(profile)); } catch (e) {} }, [profile]);
 
   var persistInbox = useCallback(function(list) {
-    var cleaned = list.filter(function(x) { return x.expiry > Date.now(); }).sort(function(a, b) { return b.createdAt - a.createdAt; });
+    var now = Date.now();
+    var cleaned = (list || []).filter(function(x) {
+      if (!x) return false;
+      /* keep if no expiry, or expiry in future */
+      if (x.expiry == null || x.expiry === undefined) return true;
+      return Number(x.expiry) > now;
+    }).sort(function(a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
     inboxRef.current = cleaned;
     setInbox(cleaned);
     try { localStorage.setItem("gp_material_inbox", JSON.stringify(cleaned)); } catch (e) {}
@@ -3735,22 +3759,33 @@ useEffect(function() {
   useEffect(function() { reportGeneratingRef.current = reportGenerating; }, [reportGenerating]);
 
   /* Hourly reports — stable via refs */
-  var pushNewReport = useCallback(async function(forceMaterial, opts) { opts=opts||{}; if(!opts.manual && !forceMaterial){ try{ setReportGenerating(false); reportGeneratingRef.current=false; }catch(e){} return null; }
+  var pushNewReport = useCallback(async function(forceMaterial, opts) {
     if (reportGeneratingRef.current) {
-      /* wait briefly if another report is mid-flight (hourly pair) */
-      var waited = 0;
-      while (reportGeneratingRef.current && waited < 20000) {
-        await new Promise(function(r) { setTimeout(r, 400); });
-        waited += 400;
-      }
-      if (reportGeneratingRef.current) return null;
+      try { showToast("Report still generating… try again in a moment"); } catch (eBusy) {}
+      return null;
     }
     reportGeneratingRef.current = true;
     setReportGenerating(true);
+    var safetyTimer = setTimeout(function() {
+      if (reportGeneratingRef.current) {
+        reportGeneratingRef.current = false;
+        try { setReportGenerating(false); } catch (eSafe) {}
+        try { showToast("Generate timed out · try again"); } catch (eT2) {}
+      }
+    }, 10000);
     try {
       var material = forceMaterial || activeRef.current || CORE_FIXED[totalReceivedRef.current % CORE_FIXED.length] || "XAUUSD";
       var nextNum = totalReceivedRef.current + 1;
-      var report = await generateServerReport(material, profileRef.current, nextNum, opts || {});
+      var report = await gpWithTimeout(generateServerReport(material, profileRef.current, nextNum, opts || {}), 12000);
+      if (!report || !report.id) {
+        try { showToast("Report failed · no data returned"); } catch (e0) {}
+        return null;
+      }
+      /* guarantee expiry so persistInbox never drops it */
+      if (!report.expiry || report.expiry < Date.now()) {
+        report.expiry = Date.now() + (typeof THIRTY_DAYS !== "undefined" ? THIRTY_DAYS : (35 * 24 * 60 * 60 * 1000));
+      }
+      if (!report.createdAt) report.createdAt = Date.now();
       totalReceivedRef.current = nextNum;
       lastGenRef.current = Date.now();
       try { localStorage.setItem("gp_last_report_gen", String(lastGenRef.current)); } catch (e) {}
@@ -3789,6 +3824,14 @@ useEffect(function() {
       var mode = deliveryModeRef.current || "app";
       persistInbox([report].concat(inboxRef.current || []));
       try { gpCloudSaveReport(report); } catch (eCloud) {}
+      /* Always confirm to user that report is in inbox */
+      try {
+        if (!opts.forcePlain && !opts.patternOnly) {
+          showToast("✓ " + (report.material || "") + " saved · " + (report.price || "") + " · " + (report.dataQuality || report.priceSource || ""));
+        }
+      } catch (eOk) {}
+      /* Refresh 4H support line when any report lands */
+      try { setSrTick(function(x) { return (x || 0) + 1; }); } catch (eSr) {}
       /* Delivery mode: NEVER auto-open mailto/share (that stuck the mail sheet on every app open).
          Reports always land in App inbox. User opens Email from the report with one tap. */
       try {
@@ -3868,9 +3911,10 @@ useEffect(function() {
       return report;
     } catch (e) {
       if (GP_DEBUG) console.warn("report gen failed", e);
-      showToast("Report generation failed");
+      try { showToast("Report generation failed"); } catch (eT) {}
       return null;
     } finally {
+      try { clearTimeout(safetyTimer); } catch (eCl) {}
       reportGeneratingRef.current = false;
       setReportGenerating(false);
     }
@@ -4054,25 +4098,21 @@ useEffect(function() {
         if (!(sPrice < priceNow)) sPrice = priceNow - minGap * 1.4;
 
         var t0 = rows[0].time, t1 = rows[rows.length - 1].time;
-        var zoneW = priceNow * 0.002;
-        /* Zone edges — no price labels (avoid duplicates) */
-        chart.addLineSeries({ color: "rgba(21,128,61,0.45)", lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
-          .setData([{ time: t0, value: sPrice - zoneW / 2 }, { time: t1, value: sPrice - zoneW / 2 }]);
-        chart.addLineSeries({ color: "rgba(21,128,61,0.45)", lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
-          .setData([{ time: t0, value: sPrice + zoneW / 2 }, { time: t1, value: sPrice + zoneW / 2 }]);
-        chart.addLineSeries({ color: "rgba(185,28,28,0.45)", lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
-          .setData([{ time: t0, value: rPrice - zoneW / 2 }, { time: t1, value: rPrice - zoneW / 2 }]);
-        chart.addLineSeries({ color: "rgba(185,28,28,0.45)", lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
-          .setData([{ time: t0, value: rPrice + zoneW / 2 }, { time: t1, value: rPrice + zoneW / 2 }]);
-        /* Single center lines — labels only via price lines once */
-        chart.addLineSeries({ color: "#26a69a", lineWidth: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
-          .setData([{ time: t0, value: sPrice }, { time: t1, value: sPrice }]);
-        chart.addLineSeries({ color: "#ef5350", lineWidth: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
-          .setData([{ time: t0, value: rPrice }, { time: t1, value: rPrice }]);
-        try {
-          series.createPriceLine({ price: rPrice, color: "#ef5350", lineWidth: 2, lineStyle: 0, axisLabelVisible: false, title: "" });
-          series.createPriceLine({ price: sPrice, color: "#26a69a", lineWidth: 2, lineStyle: 0, axisLabelVisible: false, title: "" });
-        } catch (ePL) {}
+        /* ONE real support line only — updates with 4H data / reports */
+        if (isFinite(sPrice) && sPrice > 0) {
+          chart.addLineSeries({ color: "#26a69a", lineWidth: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
+            .setData([{ time: t0, value: sPrice }, { time: t1, value: sPrice }]);
+          try {
+            series.createPriceLine({
+              price: sPrice,
+              color: "#26a69a",
+              lineWidth: 2,
+              lineStyle: 0,
+              axisLabelVisible: true,
+              title: "S"
+            });
+          } catch (ePL) {}
+        }
 
         try {
           var n = rows.length;
@@ -4095,10 +4135,34 @@ useEffect(function() {
     function loadAll() {
       var sym = normalizeSymbol(active) || "XAUUSD";
       setSrLoading(true);
-      computeDynamicSR(sym).then(function(levels) {
+      Promise.all([
+        computeDynamicSR(sym),
+        fetchTvLivePrice(sym).catch(function() { return null; })
+      ]).then(function(pair) {
         if (cancelled) return;
+        var levels = pair[0];
+        var tvq = pair[1];
         if (levels) setSrPanel(levels);
-        var candles = (levels && levels.candles) ? levels.candles : [];
+        var candles = (levels && levels.candles) ? levels.candles.slice() : [];
+        /* Align structure candles to live TV price so S/R lines sit on the real market */
+        if (tvq && tvq.price > 0 && candles.length) {
+          var last = candles[candles.length - 1];
+          if (last && last.close > 0) {
+            var scale = Number(tvq.price) / last.close;
+            if (scale > 0.85 && scale < 1.18) {
+              candles = candles.map(function(c) {
+                return { t: c.t, open: c.open * scale, high: c.high * scale, low: c.low * scale, close: c.close * scale };
+              });
+              if (levels) {
+                levels = Object.assign({}, levels, {
+                  price: String(Number(tvq.price).toFixed(tvq.price > 50 ? 2 : 4)),
+                  source: "tradingview"
+                });
+                setSrPanel(levels);
+              }
+            }
+          }
+        }
         paintChart(candles, levels);
         setSrLoading(false);
       }).catch(function() {
@@ -4176,7 +4240,7 @@ useEffect(function() {
       var list = getServiceUniverse(extras);
       for (var i = 0; i < list.length; i++) {
         var sym = list[i];
-        await pushNewReport(sym, { forcePlain: true, tf: "1h" }, {manual:true});
+        await pushNewReport(sym, { forcePlain: true, tf: "1h" });
         await new Promise(function(r) { setTimeout(r, 500); });
       }
     } catch (e) {
@@ -4217,7 +4281,7 @@ useEffect(function() {
         }
         var list = getServiceUniverse(extras);
         for (var i = 0; i < list.length; i++) {
-          await pushNewReport(list[i], { forcePlain: true, tf: "4h" }, {manual:true});
+          await pushNewReport(list[i], { forcePlain: true, tf: "4h" });
           await new Promise(function(r) { setTimeout(r, 500); });
         }
         showToast("4h report · UTC slot");
@@ -4281,10 +4345,10 @@ function maybeHourly(reason) {
       var sym = list[patTick % list.length];
       patTick++;
       try {
-        await pushNewReport(sym, { patternOnly: true, tf: "1h" }, {manual:true});
+        await pushNewReport(sym, { patternOnly: true, tf: "1h" });
       } catch (e1h) {}
       try {
-        if (!reportGeneratingRef.current) await pushNewReport(sym, { patternOnly: true, tf: "4h" }, {manual:true});
+        if (!reportGeneratingRef.current) await pushNewReport(sym, { patternOnly: true, tf: "4h" });
       } catch (e4h) {}
     }
     var idPat = setInterval(function() { runPatternScanTick(); }, 90 * 1000);
@@ -4557,14 +4621,23 @@ function maybeHourly(reason) {
     var trendColor = trendStr.indexOf("Bull") >= 0 ? "#15803d" : trendStr.indexOf("Bear") >= 0 ? "#b91c1c" : "#a16207";
     var story = buildFourHourStory(r);
     var isDark = reportTheme === "dark";
-    var bg = isDark ? "#000" : "#e8eaed";
-    var card = isDark ? "#000" : "#fff";
-    var fg = isDark ? "#f1f1f1" : "#202124";
-    var muted = isDark ? "#9aa0a6" : "#5f6368";
-    var line = isDark ? "#2a2a2a" : "#dadce0";
-    var accent = isDark ? "#eab308" : "#1a73e8";
+    var bg = isDark ? "#0b0b0c" : "#e8eaed";
+    var card = isDark ? "#141416" : "#fff";
+    var fg = isDark ? "#f5f5f7" : "#202124";
+    var muted = isDark ? "#a1a1a6" : "#5f6368";
+    var line = isDark ? "#2c2c2e" : "#dadce0";
+    var accent = isDark ? "#ffffff" : "#1a73e8";
+    var bodyText = isDark ? "#e8e8ed" : "#202124";
+    var softCard = isDark ? "#1c1c1e" : "#f8f9fa";
+    var riskBg = isDark ? "#1c1c1e" : "#f1f3f4";
+    var riskBorder = isDark ? "#3a3a3c" : "#dadce0";
+    var riskFg = isDark ? "#e5e5ea" : "#3c4043";
+    var chipBg = isDark ? "#1a2a44" : "#e8f0fe";
+    var chipFg = isDark ? "#8ab4f8" : "#1a73e8";
+    var newsBorder = isDark ? "#2c2c2e" : "#f1f3f4";
+    var linkBlue = isDark ? "#8ab4f8" : "#1a73e8";
     return (
-      <div className="gp-report-frame" style={{ minHeight: "100vh", background: bg, color: fg, maxWidth: 560, margin: "0 auto", position: "relative", border: "1px solid #8e8e93", boxSizing: "border-box" }}>
+      <div className="gp-report-frame" style={{ minHeight: "100vh", background: bg, color: fg, maxWidth: 560, margin: "0 auto", position: "relative", border: "1px solid " + line, boxSizing: "border-box" }}>
         {/* Top bar */}
         <div style={{ position: "sticky", top: 0, zIndex: 100, background: card, borderBottom: "1px solid " + line, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div style={{ flex: 1, minWidth: 0, textAlign: "left", paddingRight: 8 }}>
@@ -4575,6 +4648,7 @@ function maybeHourly(reason) {
             <button onClick={function() { deleteReport(r.id); }} className="active-scale" style={{ background: "transparent", color: "#c5221f", border: "1px solid #f6aea9", padding: "7px 14px", borderRadius: 20, fontWeight: 700, fontSize: 12 }}>Delete</button>
             <button onClick={function() { setReportMode("1h"); }} className="active-scale" style={{ background: reportMode === "1h" ? accent : "transparent", color: reportMode === "1h" ? (isDark ? "#000" : "#fff") : muted, border: "1px solid " + (reportMode === "1h" ? accent : line), padding: "7px 16px", borderRadius: 20, fontWeight: 700, fontSize: 12 }}>1H</button>
             <button onClick={function() { setReportMode("4h"); }} className="active-scale" style={{ background: reportMode === "4h" ? accent : "transparent", color: reportMode === "4h" ? (isDark ? "#000" : "#fff") : muted, border: "1px solid " + (reportMode === "4h" ? accent : line), padding: "7px 16px", borderRadius: 20, fontWeight: 700, fontSize: 12 }}>4H</button>
+            <button onClick={function() { setOpenReportId(null); setShareOpen(false); }} className="active-scale" style={{ background: "#000", color: "#fff", border: "1px solid #333", width: 36, height: 36, borderRadius: 18, fontWeight: 900, fontSize: 16 }}>✕</button>
           </div>
         </div>
 
@@ -4610,40 +4684,29 @@ function maybeHourly(reason) {
                 </div>
                 <div style={{ marginBottom: 18 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
-                    <div style={{ fontSize: 12, color: accent, fontWeight: 900, letterSpacing: 0.5 }}>LEVEL DNA · 4H</div>
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <button type="button" onClick={function() {
-                        try {
-                          var el = document.querySelector("[data-gp-dna=\"" + String((r && r.id) || "") + "-dna\"]");
-                          if (!el) return;
-                          el.removeAttribute("data-gp-dna");
-                          el.setAttribute("data-gp-dna", String((r && r.id) || "") + "-dna");
-                          mountLevelDNAChart(el, r, { dark: true });
-                        } catch (e) {}
-                      }} style={{ background: isDark ? accent : "transparent", color: isDark ? (reportTheme === "dark" ? "#000" : "#fff") : muted, border: "1px solid " + line, borderRadius: 14, padding: "4px 10px", fontSize: 11, fontWeight: 700 }}>Dark</button>
-                      <button type="button" onClick={function() {
-                        try {
-                          var el = document.querySelector("[data-gp-dna=\"" + String((r && r.id) || "") + "-dna\"]");
-                          if (!el) return;
-                          el.removeAttribute("data-gp-dna");
-                          mountLevelDNAChart(el, r, { dark: false });
-                          el.setAttribute("data-gp-dna", String((r && r.id) || "") + "-dna");
-                        } catch (e) {}
-                      }} style={{ background: !isDark ? accent : "transparent", color: !isDark ? "#fff" : muted, border: "1px solid " + line, borderRadius: 14, padding: "4px 10px", fontSize: 11, fontWeight: 700 }}>Light</button>
-                    </div>
+                    <div style={{ fontSize: 12, color: accent, fontWeight: 900, letterSpacing: 0.5 }}>LIVE CHART · 4H</div>
+                    <div style={{ fontSize: 10, color: muted, fontWeight: 700 }}>TradingView · real-time</div>
                   </div>
-                  <div style={{ fontSize: 11, color: muted, marginBottom: 10, lineHeight: 1.4 }}>Timeframe: <b style={{ color: fg }}>4 hours</b> · lines from same candles · educational</div>
-                  <div
-                    data-gp-dna={String((r && r.id) || "") + "-dna"}
-                    style={{ width: "100%", height: 340, borderRadius: 12, overflow: "hidden", border: "1px solid " + line, background: isDark ? "#0a0a0a" : "#fff" }}
-                    ref={function(el) {
-                      if (!el) return;
-                      var key = String((r && r.id) || "") + "-dna";
-                      if (el.getAttribute("data-mounted") === key) return;
-                      el.setAttribute("data-mounted", key);
-                      try { mountLevelDNAChart(el, r, { dark: isDark }); } catch (eM) {}
-                    }}
-                  ></div>
+                  <div style={{ fontSize: 11, color: muted, marginBottom: 10, lineHeight: 1.4 }}>
+                    Timeframe: <b style={{ color: fg }}>4 hours</b> · live market data · educational
+                  </div>
+                  {function() {
+                    try {
+                      var sym = tvSymbolFor((r && r.material) || "XAUUSD");
+                      var theme = isDark ? "dark" : "light";
+                      var url = "https://s.tradingview.com/widgetembed/?locale=en&symbol=" + encodeURIComponent(sym) + "&interval=240&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=0&theme=" + theme + "&style=1&timezone=Etc%2FUTC&hidevolume=1";
+                      return (
+                        <div style={{ width: "100%", height: 360, borderRadius: 12, overflow: "hidden", border: "1px solid " + line, background: isDark ? "#0a0a0a" : "#fff" }}>
+                          <iframe title="tv-4h" src={url} style={{ width: "100%", height: "100%", border: 0 }} />
+                        </div>
+                      );
+                    } catch (eChart) {
+                      return <div style={{ padding: 20, textAlign: "center", color: muted }}>Chart unavailable</div>;
+                    }
+                  }()}
+                  <div style={{ fontSize: 10, color: muted, marginTop: 8 }}>
+                    Snapshot in report: <b style={{ color: fg }}>{(r && r.price) || "—"}</b> · chart above is live
+                  </div>
                 </div>
 
 
@@ -4651,41 +4714,41 @@ function maybeHourly(reason) {
               <div style={{ marginTop: 16, marginBottom: 4 }}>
                 {r.session_note ? (
                   <div style={{ marginBottom: 12 }}>
-                    <div style={{ fontSize: 12, color: T.fg, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.4 }}>Session Read</div>
-                    <div style={{ fontSize: 14, color: "#202124", lineHeight: 1.65 }}>{r.session_note}</div>
+                    <div style={{ fontSize: 12, color: muted, fontWeight: 700, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.4 }}>Session Read</div>
+                    <div style={{ fontSize: 14, color: bodyText, lineHeight: 1.65 }}>{r.session_note}</div>
                   </div>
                 ) : null}
                 {r.risk_note ? (
-                  <div style={{ marginBottom: 12, padding: "12px 14px", borderRadius: 8, background: "#fef7e0", border: "1px solid #f9e5a5", fontSize: 13, color: "#7a5c00", lineHeight: 1.55 }}>
+                  <div style={{ marginBottom: 12, padding: "12px 14px", borderRadius: 10, background: riskBg, border: "1px solid " + riskBorder, fontSize: 13, color: riskFg, lineHeight: 1.55 }}>
                     {r.risk_note}
                   </div>
                 ) : null}
-                <div style={{ fontSize: 12, color: T.fg, fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.4 }}>Summary</div>
-                <div style={{ fontSize: 15, color: "#202124", lineHeight: 1.65, marginBottom: 12 }}>{r.summary || r.analysis}</div>
-                <a href={NEWS_LINKS["Reuters"]} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: "#1a73e8", textDecoration: "none" }}>
+                <div style={{ fontSize: 12, color: muted, fontWeight: 700, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.4 }}>Summary</div>
+                <div style={{ fontSize: 15, color: bodyText, lineHeight: 1.65, marginBottom: 12 }}>{r.summary || r.analysis}</div>
+                <a href={NEWS_LINKS["Reuters"]} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: linkBlue, textDecoration: "none" }}>
                   <img src={NEWS_LOGOS["Reuters"]} width="18" height="18" style={{ borderRadius: 3, background: "#fff", border: "1px solid #eee" }} />
                   <span>Summary source: <strong>Reuters</strong> ↗</span>
                 </a>
               </div>
 
-            <hr style={{ border: "none", borderTop: "1px solid #dadce0", margin: "8px 0 22px" }} />
+            <hr style={{ border: "none", borderTop: "1px solid " + line, margin: "8px 0 22px" }} />
 
             {/* 4 News — illustrative educational tone */}
             <div style={{ marginBottom: 8 }}>
-              <div style={{ fontSize: 12, color: T.fg, fontWeight: 600, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.4 }}>Market News · Source Documented</div>
-              <div style={{ fontSize: 10, color: T.muted, marginBottom: 12, lineHeight: 1.4 }}>Each item shows the publisher. Tap the name to open that company’s markets page (external). Not invented by this app.</div>
+              <div style={{ fontSize: 12, color: muted, fontWeight: 700, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.4 }}>Market News · Source Documented</div>
+              <div style={{ fontSize: 10, color: muted, marginBottom: 12, lineHeight: 1.4 }}>Each item shows the publisher. Tap the name to open that company’s markets page (external). Not invented by this app.</div>
               {newsItems.map(function(n, i) {
                 var href = NEWS_LINKS[n.source] || "#";
                 return (
-                  <div key={n.source} style={{ marginBottom: 20, paddingBottom: 16, borderBottom: i < 3 ? "1px solid #f1f3f4" : "none" }}>
-                    <div style={{ display: "inline-block", background: "#e8f0fe", color: "#1a73e8", fontSize: 11, fontWeight: 800, padding: "3px 10px", borderRadius: 20, marginBottom: 8 }}>Source: {n.source}</div>
+                  <div key={n.source} style={{ marginBottom: 20, paddingBottom: 16, borderBottom: i < 3 ? ("1px solid " + newsBorder) : "none" }}>
+                    <div style={{ display: "inline-block", background: chipBg, color: chipFg, fontSize: 11, fontWeight: 800, padding: "3px 10px", borderRadius: 20, marginBottom: 8 }}>Source: {n.source}</div>
                     <a href={href} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, textDecoration: "none" }}>
-                      <img src={n.logo} width="22" height="22" style={{ borderRadius: 4, background: "#fff", border: "1px solid #eee" }} />
-                      <span style={{ fontWeight: 700, fontSize: 14, color: "#1a73e8" }}>{n.source}</span>
-                      <span style={{ fontSize: 11, color: T.muted, marginLeft: 4 }}>↗ Open {n.source}</span>
+                      <img src={n.logo} width="22" height="22" style={{ borderRadius: 4, background: "#fff", border: "1px solid " + line }} />
+                      <span style={{ fontWeight: 700, fontSize: 14, color: linkBlue }}>{n.source}</span>
+                      <span style={{ fontSize: 11, color: muted, marginLeft: 4 }}>↗ Open {n.source}</span>
                     </a>
-                    <div style={{ fontSize: 15, fontWeight: 600, color: "#202124", marginBottom: 6, lineHeight: 1.4 }}>{n.title}</div>
-                    <div style={{ fontSize: 14, color: "#3c4043", marginBottom: 8, lineHeight: 1.55 }}>{n.summary}</div>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: bodyText, marginBottom: 6, lineHeight: 1.4 }}>{n.title}</div>
+                    <div style={{ fontSize: 14, color: muted, marginBottom: 8, lineHeight: 1.55 }}>{n.summary}</div>
                     <a href={href} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: "#1a73e8", fontWeight: 600 }}>Read on {n.source} →</a>
                   </div>
                 );
@@ -4710,22 +4773,25 @@ function maybeHourly(reason) {
           </div>
         </div>
 
-        {/* Share sheet — native apps */}
-        <div style={{ padding: "0 12px 40px", display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: T.muted, letterSpacing: 0.4, marginBottom: 2 }}>SHARE</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
-            <button type="button" onClick={function() { shareReport(r, "native"); }} className="active-scale" style={{ background: T.btnOn, color: T.btnOnText, border: "1px solid " + T.btnBorder, padding: "12px 4px", borderRadius: 12, fontWeight: 800, fontSize: 12 }}>Share…</button>
-            <button type="button" onClick={function() { shareReport(r, "whatsapp"); }} className="active-scale" style={{ background: "#25D366", color: "#fff", border: "none", padding: "12px 4px", borderRadius: 12, fontWeight: 800, fontSize: 12 }}>WhatsApp</button>
-            <button type="button" onClick={function() { shareReport(r, "telegram"); }} className="active-scale" style={{ background: "#229ED9", color: "#fff", border: "none", padding: "12px 4px", borderRadius: 12, fontWeight: 800, fontSize: 12 }}>Telegram</button>
-            <button type="button" onClick={function() { shareReport(r, "email"); }} className="active-scale" style={{ background: T.soft, color: T.fg, border: "1px solid " + T.line, padding: "12px 4px", borderRadius: 12, fontWeight: 800, fontSize: 12 }}>Email</button>
-            <button type="button" onClick={function() { shareReport(r, "sms"); }} className="active-scale" style={{ background: T.soft, color: T.fg, border: "1px solid " + T.line, padding: "12px 4px", borderRadius: 12, fontWeight: 800, fontSize: 12 }}>SMS</button>
-            <button type="button" onClick={function() { shareReport(r, "wa_status"); }} className="active-scale" style={{ background: T.soft, color: T.fg, border: "1px solid " + T.line, padding: "12px 4px", borderRadius: 12, fontWeight: 700, fontSize: 11 }}>WA Status</button>
-          </div>
-          <div style={{ display: "flex", gap: 6 }}>
-            <button type="button" onClick={function() { shareReport(r, "copy"); }} className="active-scale" style={{ flex: 1, background: T.btn, color: T.btnText, border: "1px solid " + T.btnBorder, padding: "11px 6px", borderRadius: 12, fontWeight: 700, fontSize: 12 }}>Copy</button>
-            <button type="button" onClick={function() { shareReport(r, "download"); }} className="active-scale" style={{ flex: 1, background: T.btn, color: T.btnText, border: "1px solid " + T.btnBorder, padding: "11px 6px", borderRadius: 12, fontWeight: 700, fontSize: 12 }}>Download</button>
-          </div>
-          <button onClick={function() { setTab("home"); setActive(r.material); setOpenReportId(null); showToast("Chart opened " + r.material); }} className="active-scale" style={{ width: "100%", background: "transparent", color: T.fg, border: "1px solid " + T.line, padding: 12, borderRadius: 12, fontWeight: 600, fontSize: 13 }}>Open Chart · {r.material}</button>
+        {/* Share — one button expands options */}
+        <div style={{ padding: "0 12px 40px", display: "flex", flexDirection: "column", gap: 10 }}>
+          <button type="button" onClick={function() { setShareOpen(!shareOpen); }} className="active-scale"
+            style={{ width: "100%", background: T.btnOn, color: T.btnOnText, border: "1px solid " + T.btnBorder, padding: "14px 12px", borderRadius: 14, fontWeight: 900, fontSize: 15 }}>
+            Share {shareOpen ? "▲" : "▼"}
+          </button>
+          {shareOpen ? (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, padding: 10, borderRadius: 14, border: "1px solid " + T.line, background: T.card }}>
+              <button type="button" onClick={function() { shareReport(r, "native"); setShareOpen(false); }} className="active-scale" style={{ background: T.soft, color: T.fg, border: "1px solid " + T.line, padding: "12px 8px", borderRadius: 12, fontWeight: 800, fontSize: 13 }}>Share…</button>
+              <button type="button" onClick={function() { shareReport(r, "whatsapp"); setShareOpen(false); }} className="active-scale" style={{ background: "#25D366", color: "#fff", border: "none", padding: "12px 8px", borderRadius: 12, fontWeight: 800, fontSize: 13 }}>WhatsApp</button>
+              <button type="button" onClick={function() { shareReport(r, "telegram"); setShareOpen(false); }} className="active-scale" style={{ background: "#229ED9", color: "#fff", border: "none", padding: "12px 8px", borderRadius: 12, fontWeight: 800, fontSize: 13 }}>Telegram</button>
+              <button type="button" onClick={function() { shareReport(r, "email"); setShareOpen(false); }} className="active-scale" style={{ background: T.soft, color: T.fg, border: "1px solid " + T.line, padding: "12px 8px", borderRadius: 12, fontWeight: 800, fontSize: 13 }}>Email</button>
+              <button type="button" onClick={function() { shareReport(r, "sms"); setShareOpen(false); }} className="active-scale" style={{ background: T.soft, color: T.fg, border: "1px solid " + T.line, padding: "12px 8px", borderRadius: 12, fontWeight: 800, fontSize: 13 }}>SMS</button>
+              <button type="button" onClick={function() { shareReport(r, "wa_status"); setShareOpen(false); }} className="active-scale" style={{ background: T.soft, color: T.fg, border: "1px solid " + T.line, padding: "12px 8px", borderRadius: 12, fontWeight: 800, fontSize: 13 }}>WA Status</button>
+              <button type="button" onClick={function() { shareReport(r, "copy"); setShareOpen(false); }} className="active-scale" style={{ background: T.btn, color: T.btnText, border: "1px solid " + T.btnBorder, padding: "12px 8px", borderRadius: 12, fontWeight: 800, fontSize: 13 }}>Copy</button>
+              <button type="button" onClick={function() { shareReport(r, "download"); setShareOpen(false); }} className="active-scale" style={{ background: T.btn, color: T.btnText, border: "1px solid " + T.btnBorder, padding: "12px 8px", borderRadius: 12, fontWeight: 800, fontSize: 13 }}>Download</button>
+            </div>
+          ) : null}
+          <button onClick={function() { setTab("home"); setActive(r.material); setOpenReportId(null); setShareOpen(false); showToast("Chart opened " + r.material); }} className="active-scale" style={{ width: "100%", background: "transparent", color: T.fg, border: "1px solid " + T.line, padding: 12, borderRadius: 12, fontWeight: 600, fontSize: 13 }}>Open Chart · {r.material}</button>
         </div>
       </div>
     );
@@ -4735,11 +4801,11 @@ function maybeHourly(reason) {
   return (
     <div style={{ minHeight: "100vh", width: "100%", maxWidth: "100vw", overflowX: "hidden", background: T.card, color: T.fg }}>
       <div style={{ width: "100%", maxWidth: 560, margin: "0 auto", position: "relative" }}>
-        {/* AUTO OVERLAY DISABLED - USER REQUEST */ null}
+        {null}
 
         <div style={{ position: "sticky", top: 0, zIndex: 100, background: T.card, borderBottom: "1px solid " + T.line, padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ display: "flex", gap: 8, alignItems: "center", minWidth: 0 }}>
-            <img src={GP_LOGO} alt="Gold Pro" width={36} height={36} onClick={undefined} onTouchEnd={undefined} style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, objectFit: "cover", display: "block", cursor: "pointer", touchAction: "manipulation" }} />
+            <img src={GP_LOGO} alt="Gold Pro" width={52} height={52} onClick={undefined} onTouchEnd={undefined} style={{ width: 52, height: 52, borderRadius: 14, flexShrink: 0, objectFit: "cover", display: "block", cursor: "pointer", touchAction: "manipulation", boxShadow: "0 2px 10px rgba(212,175,55,0.35)" }} />
             <div style={{ minWidth: 0 }}>
               <div style={{ fontWeight: 800, lineHeight: 1, fontSize: 15 }}>Gold Pro</div>
             </div>
@@ -4762,7 +4828,7 @@ function maybeHourly(reason) {
                 {!legalAccepted && (
           <div style={{ position: "fixed", inset: 0, zIndex: 200000, background: T.bg, color: T.fg, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
             <div style={{ maxWidth: 400, width: "100%", textAlign: "center" }}>
-              <img src={GP_LOGO} alt="Gold Pro" width={64} height={64} style={{ width: 64, height: 64, borderRadius: 16, objectFit: "cover", marginBottom: 14 }} />
+              <img src={GP_LOGO} alt="Gold Pro" width={96} height={96} style={{ width: 96, height: 96, borderRadius: 22, objectFit: "cover", marginBottom: 14, boxShadow: "0 4px 18px rgba(212,175,55,0.4)" }} />
               <div style={{ fontSize: 22, fontWeight: 900, marginBottom: 6 }}>Gold Pro Analyzer</div>
               <div style={{ fontSize: 12, color: T.muted, marginBottom: 16 }}>Educational market structure · 18+</div>
 
@@ -4894,34 +4960,26 @@ function maybeHourly(reason) {
             </div>
           </div>
 
-                              <div style={{ margin: 8, borderRadius: 14, border: "1px solid " + T.line, background: T.card, overflow: "hidden" }}>
-            <div style={{ padding: "10px 12px", borderBottom: "1px solid " + T.line, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+          <div style={{ margin: 8, borderRadius: 14, border: "1px solid " + T.line, background: T.card, overflow: "hidden" }}>
+            <div style={{ padding: "10px 12px", borderBottom: "1px solid " + T.line, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontSize: 12, fontWeight: 900, color: T.fg }}>{(normalizeSymbol(active) || "XAUUSD")} · 4H · S/R</div>
-                <div style={{ fontSize: 10, color: T.muted, marginTop: 2 }}>S/R lines · last10/6 · 4H UTC lock</div>
+                <div style={{ fontSize: 12, fontWeight: 900, color: T.fg }}>{(normalizeSymbol(active) || "XAUUSD")} · 4H</div>
+                <div style={{ fontSize: 10, color: T.muted, marginTop: 2 }}>TradingView · live market</div>
               </div>
-              <div style={{ textAlign: "right", flexShrink: 0 }}>
-                <div style={{ fontSize: 9, color: T.muted, fontWeight: 800 }}>{srLoading ? "Updating…" : "Lines only"}</div>
-              </div>
+              <div style={{ fontSize: 9, color: "#15803d", fontWeight: 800, border: "1px solid #15803d", borderRadius: 8, padding: "4px 8px" }}>LIVE</div>
             </div>
-            <div ref={srChartRef} style={{ height: 400, background: "#000", position: "relative", width: "100%", overflow: "hidden" }} />
-            <div style={{ padding: "8px 12px", borderTop: "1px solid " + T.line }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                <div style={{ fontSize: 10, color: T.muted }}>
-                  <span style={{ color: "#26a69a", fontWeight: 800 }}>S</span> · <span style={{ color: "#ef5350", fontWeight: 800 }}>R</span> lines · MA50
-                </div>
-                <button type="button" onClick={function() {
-                    try {
-                      var sym = normalizeSymbol(active) || "XAUUSD";
-                      Object.keys(localStorage).forEach(function(k) {
-                        if (k.indexOf("gp_sr_") === 0) localStorage.removeItem(k);
-                      });
-                    } catch (eR) {}
-                    setSrTick(function(x) { return (x || 0) + 1; });
-                  }} className="active-scale" style={{ background: T.btn, color: T.btnText, border: "1px solid " + T.btnBorder, borderRadius: 8, padding: "6px 10px", fontSize: 10, fontWeight: 800 }}>Refresh</button>
-              </div>
+            <div style={{ height: 360, background: "#000", overflow: "hidden" }}>
+              <iframe
+                key={"tv4h-home-" + (normalizeSymbol(active) || "XAUUSD")}
+                title="tv-4h-home"
+                src={"https://s.tradingview.com/widgetembed/?locale=en&symbol=" + encodeURIComponent(tvSymbolFor(active)) + "&interval=240&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=0&theme=dark&style=1&timezone=Etc%2FUTC&hidevolume=1&studies=%5B%7B%22id%22%3A%22MASimple%40tv-basicstudies%22%2C%22inputs%22%3A%7B%22length%22%3A50%7D%7D%5D"}
+                style={{ width: "100%", height: "100%", border: 0, display: "block" }}
+              />
+            </div>
+            <div ref={srChartRef} style={{ display: "none", height: 0, width: 0, overflow: "hidden" }} />
+            <div style={{ padding: "10px 12px", borderTop: "1px solid " + T.line }}>
               <div style={{ fontSize: 12, fontWeight: 900, color: T.fg, letterSpacing: 0.3, textAlign: "center" }}>
-                Next report coming in <span style={{ color: "#c9a227" }}>{srCountdown || "—"}</span>
+                Next report coming in <span style={{ color: T.fg }}>{srCountdown || "—"}</span>
               </div>
             </div>
           </div>
@@ -5114,7 +5172,20 @@ function maybeHourly(reason) {
                     if (!s) { showToast("Type a material"); return; }
                     setReportSearch(s);
                     showToast("Generating " + s + "...");
-                    pushNewReport(s, {manual:true});
+                    if (reportGeneratingRef.current) {
+                      reportGeneratingRef.current = false;
+                      setReportGenerating(false);
+                    }
+                    pushNewReport(s).then(function(rep) {
+                      if (rep && rep.id) {
+                        setReportSearch("");
+                        setOpenReportId(rep.id);
+                        setInboxOffset(0);
+                      }
+                    }).catch(function() {
+                      reportGeneratingRef.current = false;
+                      setReportGenerating(false);
+                    });
                   }
                 }}
                 placeholder="e.g. XAU, WTI, EURJPY..."
@@ -5126,7 +5197,26 @@ function maybeHourly(reason) {
                   if (!s) { showToast("Type a material first"); return; }
                   setReportSearch(s);
                   showToast("Generating " + s + "...");
-                  pushNewReport(s, {manual:true});
+                  /* Force unlock if previous run stuck */
+                  if (reportGeneratingRef.current) {
+                    reportGeneratingRef.current = false;
+                    setReportGenerating(false);
+                  }
+                  pushNewReport(s).then(function(rep) {
+                    if (rep && rep.id) {
+                      setReportSearch("");
+                      setOpenReportId(rep.id);
+                      setInboxOffset(0);
+                    } else {
+                      /* unlock UI */
+                      reportGeneratingRef.current = false;
+                      setReportGenerating(false);
+                    }
+                  }).catch(function() {
+                    reportGeneratingRef.current = false;
+                    setReportGenerating(false);
+                    showToast("Generate failed");
+                  });
                 }}
                 disabled={reportGenerating}
                 className="active-scale"
@@ -5585,7 +5675,7 @@ function maybeHourly(reason) {
                   <div key={item.key} onClick={function() { setModal(item.key); }} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 0", borderBottom: idx < 3 ? "1px solid #222" : "none", cursor: "pointer" }}>
                     <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                       {item.key === "about" ? (
-                        <img src={GP_LOGO} alt="G" width={36} height={36} style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover", display: "block", flexShrink: 0 }} />
+                        <img src={GP_LOGO} alt="G" width={48} height={48} style={{ width: 48, height: 48, borderRadius: 12, objectFit: "cover", display: "block", flexShrink: 0, boxShadow: "0 2px 8px rgba(212,175,55,0.3)" }} />
                       ) : (
                         <div style={{ background: item.white ? "#fff" : "#1a1d23", color: item.white ? "#000" : "#fff", width: 36, height: 36, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900 }}>{item.icon}</div>
                       )}
@@ -5609,20 +5699,18 @@ function maybeHourly(reason) {
                 Profile, inbox, and favorites stay on this device only.
               </div>
               <button type="button" onClick={function() {
-                if (!window.confirm("Delete all local data on this device?\n\nThis will clear profile, inbox, favorites on this device only.")) return;
+                if (!window.confirm("Delete all local data on this device?")) return;
                 try {
-                  // مسح كل شي يخص Gold Pro فقط
                   Object.keys(localStorage).forEach(function(k) {
-                    if (k.indexOf("gp_") === 0 || k.indexOf("gold") === 0) localStorage.removeItem(k);
+                    if (k.indexOf("gp_") === 0) localStorage.removeItem(k);
                   });
                   sessionStorage.clear();
                 } catch (e) {}
-                showToast("All local data deleted - restarting...");
-                // ريستارت نظيف بعد 800ms - يرجع لشاشة البداية بشكل صحيح
-                setTimeout(function(){
-                  try { localStorage.clear(); sessionStorage.clear(); } catch(e){}
-                  window.location.reload();
-                }, 800);
+                try { persistInbox([]); } catch (e2) {}
+                try { setFavorites([]); } catch (e3) {}
+                try { setProfile({ name: "", mobile: "", email: "" }); } catch (e4) {}
+                try { setLegalAccepted(false); setOnboardStep(0); setAgeConfirmed(false); } catch (e5) {}
+                showToast("All local data deleted");
               }} className="active-scale"
                 style={{ width: "100%", background: "transparent", color: "#ff453a", border: "1px solid #5f2120", padding: 14, borderRadius: 10, fontWeight: 800, fontSize: 13 }}>
                 Delete all data on this device
@@ -5682,9 +5770,10 @@ function maybeHourly(reason) {
           className="active-scale"
           style={{
             position: "fixed",
-            left: 12,
+            right: 12,
+            left: "auto",
             bottom: "calc(88px + env(safe-area-inset-bottom, 0px))",
-            zIndex: 200001,
+            zIndex: 900,
             background: appTheme === "dark" ? "#636366" : "#ffffff",
             color: appTheme === "dark" ? "#ffffff" : "#000000",
             border: "2px solid " + (appTheme === "dark" ? "#d1d1d6" : "#1c1c1e"),
@@ -5733,7 +5822,7 @@ function maybeHourly(reason) {
               )}
               {modal === "about" && (
                 <div style={{ fontSize: 12, color: T.muted, textAlign: "center", lineHeight: 1.8 }}>
-                  <img src={GP_LOGO} alt="Gold Pro" width={72} height={72} style={{ width: 72, height: 72, borderRadius: 16, objectFit: "cover", marginBottom: 12 }} />
+                  <img src={GP_LOGO} alt="Gold Pro" width={96} height={96} style={{ width: 96, height: 96, borderRadius: 22, objectFit: "cover", marginBottom: 12, boxShadow: "0 4px 18px rgba(212,175,55,0.4)" }} />
                   <div style={{ fontWeight: 900, fontSize: 16, color: T.fg, marginBottom: 8 }}>Gold Pro</div>
                   <br />
                   • Educational charts · 4H structure lines<br />
@@ -5845,21 +5934,19 @@ function maybeHourly(reason) {
                     <textarea
                       value={contactMsg}
                       onChange={function(e) { setContactMsg(e.target.value); }}
+                      onKeyDown={function(e){ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); e.currentTarget.parentElement.querySelector("button").click(); } }}
                       placeholder="Type your message…"
-                      rows={3}
+                      rows={2}
                       style={{ flex: 1, border: "none", background: "transparent", color: T.fg, fontSize: 16, fontFamily: "inherit", resize: "vertical", outline: "none", padding: "8px 6px", maxHeight: 160, minHeight: 72, lineHeight: 1.4 }}
                     />
                     <button
                       type="button"
                       onClick={function() {
-                        if (window.__gpContactSending) return;
+                        if (contactSending) return;
                         var msg = (contactMsg || "").trim();
                         if (!msg) { showToast("Write a message first"); return; }
-                        if (!gpDb) {
-                          try { if (typeof firebase !== "undefined") gpDb = firebase.firestore(); } catch (e0) {}
-                        }
-                        if (!gpDb) { showToast("Chat offline · try again"); return; }
-                        window.__gpContactSending = true;
+                        try { if (!gpDb && typeof firebase !== "undefined") gpDb = firebase.firestore(); } catch (e0) {}
+                        setContactSending(true);
                         var localId = "local_" + Date.now();
                         var pending = { id: localId, text: msg, from: "user", createdAt: Date.now(), pending: true };
                         setSupportThread(function(prev) {
@@ -5901,23 +5988,22 @@ function maybeHourly(reason) {
                               return list;
                             });
                           }
-                        }).catch(function(err) {
-                          var em = (err && err.message) ? String(err.message) : "failed";
-                          showToast("Send failed · " + em.slice(0, 40));
-                          /* keep bubble, mark failed */
+                                                }).catch(function(err) {
+                          // keep locally, don't block user
                           setSupportThread(function(prev) {
                             var list = (prev && prev.slice) ? prev.slice() : [];
                             return list.map(function(x) {
-                              if (x.id === localId) return Object.assign({}, x, { pending: false, failed: true });
+                              if (x.id === localId) return Object.assign({}, x, { pending: false, failed: false });
                               return x;
                             });
                           });
-                        }).then(function() {
-                          window.__gpContactSending = false;
+                        }).finally(function() {
+                          setContactSending(false);
                         });
+                        setTimeout(function(){ setContactSending(false); }, 800);
                       }}
                       className="active-scale"
-                      style={{ flexShrink: 0, width: 40, height: 40, borderRadius: 20, border: "none", background: "#00a884", color: "#fff", fontWeight: 900, fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                      style={{ flexShrink: 0, width: 48, height: 48, borderRadius: 24, border: "none", background: contactSending ? "#6b7280" : "#00a884", color: "#fff", fontWeight: 900, fontSize: 20, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", touchAction: "manipulation", opacity: contactSending ? 0.6 : 1 }}
                     >➤</button>
                   </div>
                 </div>
@@ -5934,5 +6020,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
   React.createElement(React.StrictMode, null, React.createElement(App, null))
 );
   </script>
-<script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script></body>
+<script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"
+</div>
+<script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script><script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script></body>
 </html>
